@@ -558,4 +558,202 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram name="Ingestion I/O" id="ingestion-io">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="iio_title" value="Ingestion — Stage I/O Examples" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_subtitle" value="What each stage receives → what it produces, with concrete data examples" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_note" value="Output of stage N = input of stage N+1.&#10;Examples trace one doc: SOP-MICRO-014_Gram-Stain_v3.docx" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="25" width="490" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r1_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;(Initial state — no upstream stage.&#10;File uploaded to S3 by lab admin&#10;or upstream system.)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="120" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r1_stage" value="&lt;b&gt;1.&lt;br&gt;SOURCES&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="120" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r1_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;File now in S3:&#10;&#10;  bucket:   lab-sops-prod&#10;  key:      micro/SOP-MICRO-014_v3.docx&#10;  size:     2.4 MB&#10;  format:   DOCX&#10;  uploaded: 2026-04-27T15:42:00Z" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="120" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r2_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;S3 PutObject event (auto-fired):&#10;&#10;  bucket:  lab-sops-prod&#10;  key:     micro/SOP-MICRO-014_v3.docx&#10;  etag:    abc123def456&#10;  time:    2026-04-27T15:42:00Z" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="310" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r2_stage" value="&lt;b&gt;2.&lt;br&gt;TRIGGER&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="310" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r2_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;SQS message (queued):&#10;&#10;  message_id:  msg_abc123&#10;  body: {&#10;    s3_uri:   s3://lab-sops-prod/micro/SOP-MICRO-014_v3.docx&#10;    enqueued: 2026-04-27T15:42:01Z&#10;    attempt:  1&#10;  }&#10;&#10;(if msg fails 3× retries → DLQ)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="310" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r3_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;SQS msg → fetch from S3:&#10;&#10;  s3://lab-sops-prod/micro/&#10;       SOP-MICRO-014_v3.docx&#10;&#10;  format detected: DOCX&#10;  → routed to docx_parser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="500" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r3_stage" value="&lt;b&gt;3.&lt;br&gt;PARSE&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="500" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r3_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;{&#10;  text:      &quot;Purpose: This SOP describes the&#10;             standardized procedure for Gram&#10;             staining of microbiology specimens...&#10;             [3,847 lines, 28,420 chars total]&quot;&#10;  format:    docx&#10;  pages:     18&#10;  ocr_used:  false&#10;  parser:    docx_parser&#10;  parse_ms:  320&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="500" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r4_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;text + filename + S3 path:&#10;&#10;  filename: SOP-MICRO-014_Gram-Stain_v3.docx&#10;  path:     /micro/...&#10;  text:     [28,420 chars]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="690" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r4_stage" value="&lt;b&gt;4.&lt;br&gt;DOC&lt;br&gt;PROCESSING&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="690" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r4_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Doc registry entry:&#10;  doc_id:        doc_micro_014_v3_abc12&#10;  type:          SOP&#10;  discipline:    Microbiology&#10;  version:       v3&#10;  status:        active&#10;  supersedes:    doc_micro_014_v2_xyz98&#10;  effective:     2024-08-15&#10;  author:        J. Smith&#10;&#10;Section map:&#10;  Purpose:[200,450]  Procedure:[721,2400]  AC:[2401,3100]&#10;  QC:[3101,3650]     References:[3651,3900]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="690" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r5_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;text + section map + doc_id:&#10;&#10;  doc_id:    doc_micro_014_v3_abc12&#10;  text:      [28,420 chars]&#10;  sections:  6 detected" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="880" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r5_stage" value="&lt;b&gt;5.&lt;br&gt;CHUNK&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="880" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r5_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;~150 chunks total. Example:&#10;&#10;{&#10;  chunk_id:    chunk_001&#10;  doc_id:      doc_micro_014_v3_abc12&#10;  section:     Procedure&#10;  subsection:  3.1&#10;  text:        &quot;3.1 Slide preparation: Place 1 drop&#10;               of specimen on a clean glass slide.&#10;               Allow to air-dry...&quot;&#10;  tokens:      287&#10;  start_char:  824&#10;  end_char:    1340&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="880" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r6_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;list of chunks (~150)&#10;&#10;per chunk:&#10;  {chunk_id, doc_id, section,&#10;   subsection, text, tokens}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1070" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r6_stage" value="&lt;b&gt;6.&lt;br&gt;ENRICH&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1070" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r6_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;enriched chunk:&#10;  chunk_id:        chunk_001&#10;  text_raw:        &quot;Slide preparation: Place...&quot;&#10;  text_enriched:   &quot;Slide preparation [Code 87209:&#10;                    Smear, primary source]: Place...&quot;&#10;  entities: {&#10;    organisms:   [&quot;Gram-positive cocci&quot;]&#10;    specimens:   [&quot;sputum&quot;, &quot;wound exudate&quot;]&#10;    instruments: [&quot;BD Phoenix&quot;]&#10;    codes:       [&quot;87209&quot;]&#10;    regs:        [&quot;CLIA §493.1252&quot;]&#10;  }&#10;  phi_detected:    false&#10;  themes:          [{G2: 0.84}, {G5: 0.41}]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1070" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r7_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;enriched chunks (~150)&#10;&#10;per chunk:&#10;  text_enriched +&#10;  all metadata above" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1260" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r7_stage" value="&lt;b&gt;7.&lt;br&gt;EMBED&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1260" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r7_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;embedded chunk:&#10;  chunk_id: chunk_001&#10;&#10;  dense_vector:&#10;    [0.0234, -0.1849, 0.0573, ..., 0.2891]&#10;    (1024 dimensions, Bedrock Titan v2)&#10;&#10;  bm25_tokens_raw:&#10;    [&quot;slide&quot;,&quot;preparation&quot;,&quot;place&quot;,&quot;drop&quot;,&quot;specimen&quot;,...]&#10;&#10;  bm25_tokens_enriched:&#10;    [...,&quot;code&quot;,&quot;87209&quot;,&quot;smear&quot;,&quot;primary&quot;,&quot;source&quot;,...]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1260" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iio_r8_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;embedded chunks (~150)&#10;+ all metadata accumulated&#10;  through stages 4-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1450" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r8_stage" value="&lt;b&gt;8.&lt;br&gt;STORE&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1450" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="iio_r8_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Vector index (OpenSearch k-NN):&#10;  PUT chunk_001 → {dense_vector, doc_id, section, themes}&#10;&#10;Sparse index (OpenSearch BM25):&#10;  PUT chunk_001 → {tokens_raw, tokens_enriched, doc_id, section}&#10;&#10;Chunk metadata (DynamoDB):&#10;  PUT chunk_001 → {entities, themes, version, confidence, phi_status}&#10;&#10;Doc registry: (already populated in stage 4)&#10;S3 original docs: (untouched — source of truth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1450" width="860" height="170" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Retrieval I/O" id="retrieval-io">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="rio_title" value="Retrieval — Stage I/O Examples" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_subtitle" value="What each stage receives → what it produces, with concrete data examples" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_note" value="Example traces one query: &quot;Generate epics for specimen rejection in microbiology&quot;&#10;Output of stage N = input of stage N+1." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="25" width="490" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r1_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;SME types in chat:&#10;&#10;  &quot;Generate epics for specimen&#10;   rejection in microbiology&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="120" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r1_stage" value="&lt;b&gt;1.&lt;br&gt;INPUT&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="120" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r1_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;{&#10;  user_query: &quot;Generate epics for specimen rejection&#10;              in microbiology&quot;&#10;  session_state: {&#10;    drafts: [{id:1, title:&quot;Specimen Rejection...&quot;},&#10;             {id:2, title:&quot;AST Workflow&quot;}]&#10;    prior_turns: [...]&#10;  }&#10;  consumed_config: {&#10;    theme_centroids: [&lt;8 vectors&gt;],&#10;    theme_defs:      [...],&#10;    code_dict:       [...]&#10;  }&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="120" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r2_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;raw user query string&#10;+ session state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="310" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r2_stage" value="&lt;b&gt;2.&lt;br&gt;PRE-PROCESS&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="310" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r2_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;{&#10;  normalized_query: &quot;Generate epics for specimen&#10;                    rejection in microbiology&quot;,&#10;  language: &quot;en&quot;,&#10;  refs: []&#10;    (no '@SOP-...' or 'epic N' patterns detected)&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="310" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r3_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;normalized query&#10;+ session state&#10;+ config (8 theme centroids)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="500" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r3_stage" value="&lt;b&gt;3.&lt;br&gt;INTENT&lt;br&gt;DECODE&lt;br&gt;+ DECISION&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="500" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r3_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Centroid distribution (no LLM):&#10;  G1: 0.81  G5: 0.18  G2: 0.04  others: &lt; 0.02&#10;&#10;Haiku classifier:&#10;  action: generate     themes: [G1, G5]&#10;  discipline: Micro    granularity: epic&#10;  refs: []             confidence: 0.91&#10;&#10;Co-ref resolved: []&#10;&#10;Decision: PROCEED → expand&#10;  (conf 0.91 ≥ τ=0.7  ✓   action ∈ corpus_actions  ✓)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="500" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r4_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;intent {action, themes, discipline,&#10;        granularity, refs, confidence}&#10;+ original query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="690" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r4_stage" value="&lt;b&gt;4.&lt;br&gt;EXPAND&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="690" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r4_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;{&#10;  original: &quot;specimen rejection in microbiology&quot;,&#10;&#10;  paraphrases: [&#10;    &quot;unacceptable specimens for Micro&quot;,&#10;    &quot;specimen integrity failures Micro&quot;,&#10;    &quot;specimen NDR microbiology&quot;&#10;  ],&#10;&#10;  code_expansions: []&#10;    (no codes found in query)&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="690" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r5_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;expanded query set&#10;+ active themes [G1, G5]&#10;+ discipline = Microbiology&#10;+ granularity = epic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="880" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r5_stage" value="&lt;b&gt;5.&lt;br&gt;RETRIEVE&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="880" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r5_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Per slot (BM25 + Dense → RRF fusion):&#10;&#10;  slot_1 (Micro / G1+G5):     20 chunks&#10;  slot_2 (Cyto / G1+G5):      10 chunks  ← analogy&#10;  slot_3 (Micro / adjacent):  10 chunks  ← G2 neighbors&#10;  slot_4 (Jira exemplars):     5 chunks  (active: generate∧epic)&#10;  slot_5 (Regulatory):         3 chunks  (active: theme G5)&#10;&#10;  total: 48 candidate chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="880" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r6_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;48 candidate chunks&#10;in 5 slots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1070" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r6_stage" value="&lt;b&gt;6.&lt;br&gt;RERANK&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1070" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r6_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Reranked &amp;amp; trimmed (cross-encoder per slot):&#10;&#10;  slot_1: 8 chunks  (scores 0.91 → 0.62)&#10;  slot_2: 4 chunks  (scores 0.85 → 0.58)&#10;  slot_3: 3 chunks  (scores 0.72 → 0.55)&#10;  slot_4: 3 chunks  (scores 0.79 → 0.61)&#10;  slot_5: 2 chunks  (scores 0.76 → 0.59)&#10;&#10;  Low-score gate: PASS&#10;    (all slots have hits ≥ θ=0.50)&#10;&#10;  total: 20 chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1070" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r7_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;20 reranked chunks (per slot)&#10;+ session state&#10;+ output schema&#10;+ 8-theme prior" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1260" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r7_stage" value="&lt;b&gt;7.&lt;br&gt;ASSEMBLE&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1260" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r7_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Final prompt (token_count: 6,840):&#10;&#10;  SYSTEM: You generate Microbiology LIMS Jira epics.&#10;  The 8 themes: G1 Pre-Analytic ... G8 Platform.&#10;&#10;  PRIMARY:  &lt;8 Micro chunks&gt;&#10;  ANALOGY:  &lt;4 Cyto chunks&gt;&#10;  ADJACENT: &lt;3 G2 chunks&gt;&#10;  EXEMPLAR: &lt;3 Cyto epic samples&gt;&#10;  REG:      &lt;2 CLSI sections&gt;&#10;&#10;  SESSION:  &lt;existing drafts&gt;&#10;  SCHEMA:   {epics:[{title,theme,ac,stories[]}]}&#10;&#10;  USER: Generate epics for specimen rejection in microbiology" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1260" width="860" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rio_r8_in" value="&lt;i&gt;[INPUT]&lt;/i&gt;&#10;&#10;final prompt&#10;→ Bedrock Claude&#10;   (with structured-output schema)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1450" width="540" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r8_stage" value="&lt;b&gt;8.&lt;br&gt;OUTPUT&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1450" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rio_r8_out" value="&lt;i&gt;[OUTPUT]&lt;/i&gt;&#10;&#10;Generated epics (JSON):&#10;[&#10;  {&#10;    epic_id:  epic_draft_3,&#10;    title:    &quot;Specimen Rejection Workflow&quot;,&#10;    theme:    G1,&#10;    citations: [&quot;s3://...SOP-MICRO-007 §AC&quot;,&#10;                &quot;s3://...SOP-CYTO-021 §Procedure&quot;,&#10;                &quot;CLSI M22 §3.4&quot;],&#10;    stories: [&quot;Validate transport temperature&quot;,&#10;              &quot;Flag specimens older than 4h&quot;, ...]&#10;  },&#10;  ... 1-3 more epics&#10;]&#10;&#10;Telemetry: query_id, intent, slot_scores, total_chunks: 20,&#10;           tokens: 6840, latency_ms: 4320" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;fontSize=9;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="810" y="1450" width="860" height="170" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>
