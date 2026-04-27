@@ -756,4 +756,135 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram name="Query Taxonomy" id="query-taxonomy">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1500" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="qt_title" value="Query Taxonomy &amp; Routing" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_subtitle" value="How the system handles different query shapes — explicit policies for ambiguity, defaults, and out-of-scope" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_note" value="Intent decoder is a 4-dim dispatcher: {action, themes, discipline, granularity}.&#10;Any combination is valid input; routing decisions below cover the variations." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="25" width="490" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_sec_a" value="POLICY DECISIONS — explicit, tunable, made once with SME" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="900" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_p1" value="&lt;b&gt;P1 — DEFAULT DISCIPLINE&lt;/b&gt;&#10;&lt;i&gt;When discipline is unspecified&lt;/i&gt;&#10;&#10;Default to &lt;b&gt;active POC discipline&lt;/b&gt; (currently Microbiology). Tag the output with 'scope: Micro'. SME can override with explicit discipline in next turn." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="380" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_p2" value="&lt;b&gt;P2 — OUT-OF-CORPUS&lt;/b&gt;&#10;&lt;i&gt;When discipline isn't in the indexed corpus&lt;/i&gt;&#10;&#10;&lt;b&gt;Refuse to hallucinate.&lt;/b&gt; Respond with 3 options: (a) upload SOPs for that discipline, (b) draft from analogy with caveat, (c) clarify scope. Triggered by low-score gate (all slot scores &amp;lt; θ)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="440" y="140" width="380" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_p3" value="&lt;b&gt;P3 — VAGUE QUERY&lt;/b&gt;&#10;&lt;i&gt;When intent confidence is below τ&lt;/i&gt;&#10;&#10;Don't retrieve. Ask a structured clarifying question with concrete options: pick a theme (G1–G8), pick a discipline, or request an overview. Loop the user response back through intent decode." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="840" y="140" width="380" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_p4" value="&lt;b&gt;P4 — THRESHOLDS&lt;/b&gt;&#10;&lt;i&gt;Tunable from telemetry&lt;/i&gt;&#10;&#10;&lt;b&gt;τ (tau) = 0.7&lt;/b&gt; — intent confidence; below = clarify.&#10;&lt;b&gt;θ (theta) = 0.5&lt;/b&gt; — retrieval relevance; all slots below = refuse.&#10;Adjust quarterly from real query distribution + SME feedback." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="140" width="380" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_sec_b" value="QUERY TAXONOMY — six query shapes and how each is handled" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="305" width="1100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_h_shape" value="SHAPE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#cccccc;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="345" width="200" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_h_query" value="EXAMPLE QUERY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#cccccc;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="260" y="345" width="320" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_h_intent" value="INTENT DECODE → DECISION" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#cccccc;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="600" y="345" width="500" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_h_effect" value="EFFECT — what the user gets" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#cccccc;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="345" width="540" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r1_shape" value="&lt;b&gt;SPECIFIC&lt;/b&gt;&#10;&#10;&lt;i&gt;theme + discipline both clear&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="395" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r1_query" value="&quot;epics for specimen rejection in microbiology&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="395" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r1_intent" value="action:      generate&#10;themes:      [G1]&#10;discipline:  Microbiology&#10;granularity: epic&#10;conf:        0.91&#10;&#10;Decision: PROCEED (happy path)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="395" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r1_effect" value="• Multi-slot retrieval (all 5 slots active)&#10;• 2–4 G1 epics generated for Micro&#10;• Citations to e.g. SOP-MICRO-007 §AC,&#10;  SOP-CYTO-021 §Procedure (analogy)&#10;• Output: epics with stories + ACs&#10;• Telemetry logged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="395" width="540" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r2_shape" value="&lt;b&gt;THEME ONLY&lt;/b&gt;&#10;&#10;&lt;i&gt;discipline unspecified&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="570" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r2_query" value="&quot;create epics for instrumentation&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="570" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r2_intent" value="action:      generate&#10;themes:      [G7]&#10;discipline:  &lt;UNSPECIFIED&gt;&#10;granularity: epic&#10;conf:        0.92 / 0.45 (split)&#10;&#10;Decision: P1 → default to Micro&#10;          (POC active discipline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="570" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r2_effect" value="• Multi-slot retrieve, scope = Micro&#10;• 3–6 G7 epics: BD Phoenix integration,&#10;  MALDI-TOF workflow, MGIT 960 result&#10;  capture, instrument QC daily run, ...&#10;• Output tagged: &quot;scope: Microbiology&quot;&#10;• G7 expansion hint (6–10 instruments vs 1&#10;  in Cyto) is in the system prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="570" width="540" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r3_shape" value="&lt;b&gt;DISCIPLINE ONLY&lt;/b&gt;&#10;&#10;&lt;i&gt;theme unspecified — broad ask&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="745" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r3_query" value="&quot;create epics for microbiology&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="745" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r3_intent" value="action:      generate&#10;themes:      [all G1–G8]&#10;discipline:  Microbiology&#10;granularity: epic&#10;conf:        0.88&#10;&#10;Decision: PROCEED with theme-&#10;          decomposed planner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="745" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r3_effect" value="• 8 retrieval+generation passes&#10;  (one per theme G1–G8)&#10;• Each pass: 2–5 epics&#10;• Final draft: ~20–40 epics across themes&#10;• Coverage check: every theme has ≥ 1 epic&#10;• Theme imbalance flagged if any (e.g.,&#10;  too much G8 platform boilerplate)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="745" width="540" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r4_shape" value="&lt;b&gt;OUT-OF-CORPUS&lt;/b&gt;&#10;&#10;&lt;i&gt;discipline absent from corpus&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="920" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r4_query" value="&quot;create epics for blood tests&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="920" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r4_intent" value="action:      generate&#10;themes:      [G2, G5]&#10;discipline:  Chemistry / Hematology&#10;conf:        0.71 / 0.34 (split)&#10;&#10;Decision: P2 → low-score gate fires&#10;          (all slot scores &amp;lt; θ=0.50)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="920" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r4_effect" value="P2 — REFUSE TO HALLUCINATE.&#10;Response to user:&#10;&#10;  &quot;I don't have source material for blood&#10;   tests. Current scope: Cyto + Micro.&#10;   Options:&#10;     1. Upload Hema/Chem SOPs to S3&#10;     2. Draft from Cyto/Micro analogy (caveat)&#10;     3. Clarify scope.&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="920" width="540" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r5_shape" value="&lt;b&gt;VAGUE&lt;/b&gt;&#10;&#10;&lt;i&gt;intent below confidence threshold&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1095" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r5_query" value="&quot;what should we build?&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1095" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r5_intent" value="action:      ?  (unclear)&#10;themes:      []&#10;discipline:  ?&#10;conf:        0.22  (BELOW τ=0.7)&#10;&#10;Decision: P3 → clarifying question&#10;          (don't retrieve, don't generate)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1095" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r5_effect" value="P3 — DON'T RETRIEVE. Ask:&#10;&#10;  &quot;Which would you like to focus on?&#10;   • A theme — G1 Pre-Analytic, G2 Analytic,&#10;     ... G8 Platform&#10;   • A discipline — Microbiology (POC)&#10;   • Overview of all themes for Micro&quot;&#10;&#10;User response loops back to intent decode." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1095" width="540" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qt_r6_shape" value="&lt;b&gt;COMPARE&lt;/b&gt;&#10;&#10;&lt;i&gt;different action: cross-discipline&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1270" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r6_query" value="&quot;compare specimen rejection between micro and cyto&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=11;fontStyle=2;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1270" width="320" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r6_intent" value="action:      compare  ← different action&#10;themes:      [G1]&#10;discipline:  cross&#10;granularity: NA&#10;conf:        0.93&#10;&#10;Decision: PROCEED in compare-mode&#10;          (different orchestration path)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1270" width="500" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="qt_r6_effect" value="• Compare-mode retrieval: Micro slot + Cyto&#10;  slot side-by-side (no analogy / exemplar)&#10;• Compare-mode prompt template:&#10;    SHARED / MICRO-ONLY / CYTO-ONLY /&#10;    WHY-DIVERGE&#10;• Output: comparison report,&#10;  NOT new epics&#10;• Useful for SME alignment review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1270" width="540" height="160" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>
