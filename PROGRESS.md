@@ -16,7 +16,7 @@
 - ✅ Glossary doc explaining every term + AWS service
 - ✅ End-to-end stage explainer doc
 - ✅ Established 4 explicit policy decisions for query routing (default discipline, out-of-corpus, vague query, confidence thresholds τ=0.7 / θ=0.5)
-- ✅ Conceptual reframe: SOP → Epic → Story (collapsed from 4-layer model — D6)
+- ✅ Conceptual reframe: agent's deliverable scope = SOP → Epic → Story (collapsed from 4-layer model — D6); the platform's full Jira hierarchy is Epic → Story → Task with Tasks dev-authored
 - ✅ Established the story-actionability bar with concrete examples (vague vs actionable — D7)
 - ✅ Public GitHub repo published (`Rajneesh-Tiwari/LabReq_agent`)
 - ✅ Reviewed real Cyto Jira evidence (Epics, Stories, Tasks) → confirmed 3-level Jira hierarchy and discovered that Cyto Stories are not at a single abstraction level
@@ -26,8 +26,8 @@
 
 - 🔄 New drawio pages (9–12) reflecting v3.1:
   - **Page 9:** Working Model — 3-level Cyto hierarchy, agent's scope boundary (Epic + Story), 4 story shapes with examples per shape
-  - **Page 10:** Agent Pipeline — 5 agents (Epic Extractor → Story Extractor → Validator → Cross-SOP Synthesis → Dependency Resolver)
-  - **Page 11:** Validator Rubrics — 4 type-aware sub-rubrics + revise/escalate logic
+  - **Page 10:** Agent Pipeline — Epic Extractor → Story Extractor → **Validator** (gate #1, per-SOP stories) → Cross-SOP Synthesis → **Validator** (gate #2, synthesized capability stories) → Dependency Resolver. Same Validator agent invoked at both gates; every story write passes through it. Show batch boundary (synthesis runs only after all SOPs are extracted and gate #1 has cleared) and the dual output streams (Stories + per-culture Configuration Profile).
+  - **Page 11:** Validator Rubrics — 4 type-aware sub-rubrics + revise/escalate logic (applies at both validator gates)
   - **Page 12:** Cross-SOP Synthesis & Exemplar Corpus — synthesis trigger logic, exemplar curation, growth loop
 - 🔄 Light edits to existing pages 1–8 to re-label retrieval primitives as exemplar-retrieval consumers in the new pipeline
 

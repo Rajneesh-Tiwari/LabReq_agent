@@ -887,4 +887,276 @@
       </root>
     </mxGraphModel>
   </diagram>
+
+  <diagram name="Working Model" id="working-model">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="wm_title" value="Working Model — SOP → Epic → Story" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_subtitle" value="3-level Cyto Jira hierarchy; agent's deliverable is Epic + Story (Tasks dev-authored); Stories come in 4 shapes" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1300" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wm_sec_a" value="HIERARCHY — agent's scope vs. dev-team's task layer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="95" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wm_epic" value="&lt;b&gt;EPIC&lt;/b&gt;&#10;&lt;i&gt;capability domain&lt;/i&gt;&#10;&#10;e.g., Microbiology Specimen Receipt&#10;Microbiology Result Reporting&#10;Microbiology Configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="135" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_story" value="&lt;b&gt;STORY&lt;/b&gt;&#10;&lt;i&gt;dev-actionable unit, 4 shapes&lt;/i&gt;&#10;&#10;capability · workflow-stage-split&#10;configuration-instance · cleanup&#10;&#10;agent emits via type-aware extraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="135" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_task" value="&lt;b&gt;TASK&lt;/b&gt; &lt;font color=&quot;#aa3300&quot;&gt;[OUT-OF-SCOPE]&lt;/font&gt;&#10;&lt;i&gt;dev-authored, codebase-specific&lt;/i&gt;&#10;&#10;automation tests · lib upgrades&#10;DB schema · bug fixes · UI cleanup&#10;&#10;agent stops here (D14)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=11;align=center;verticalAlign=middle;spacingLeft=10;spacingRight=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="680" y="135" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="wm_epic" target="wm_story">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;dashed=1;strokeColor=#aaaaaa;" edge="1" parent="1" source="wm_story" target="wm_task">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_boundary" value="&lt;b&gt;Agent boundary&lt;/b&gt;&#10;Epic + Story are the agent's deliverable.&#10;Tasks are produced by dev teams once they have codebase visibility — agent can't fabricate test IDs / lib versions / DB columns defensibly." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="135" width="660" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wm_sec_b" value="STORY SHAPES — concrete example per shape (per-SOP extraction replicates the Cyto mix; D10)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="285" width="1300" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_s1" value="&lt;b&gt;CAPABILITY&lt;/b&gt;&#10;&lt;i&gt;configurable system feature&lt;/i&gt;&#10;&#10;&lt;b&gt;Title:&lt;/b&gt; Specimen Rejection Rules Engine&#10;&#10;&lt;b&gt;Description:&lt;/b&gt; As an admin, I want configurable specimen rejection rules so that each lab can codify its own acceptance criteria.&#10;&#10;&lt;b&gt;AC (capability rubric):&lt;/b&gt;&#10;• System SHALL allow rule definition with {predicate, threshold, action}.&#10;• System SHALL evaluate rules at receipt and emit a rejection record.&#10;• Configuration UI SHALL list / enable / disable rules per lab." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="325" width="395" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_s2" value="&lt;b&gt;WORKFLOW-STAGE-SPLIT&lt;/b&gt;&#10;&lt;i&gt;same capability, decomposed by stage&lt;/i&gt;&#10;&#10;&lt;b&gt;Sibling titles (one capability, three stories):&lt;/b&gt;&#10;• PHI Update Before Work Has Started&#10;• PHI Update After Work Has Started (Before Results)&#10;• PHI Update After Results Are Reported&#10;&#10;&lt;b&gt;AC (stage-split rubric):&lt;/b&gt;&#10;• Title MUST name the stage explicitly.&#10;• Stage-specific behavior MUST be testable (entry/exit conditions observable).&#10;• Sibling stories MUST be enumerated and cross-linked." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="455" y="325" width="395" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_s3" value="&lt;b&gt;CONFIGURATION-INSTANCE&lt;/b&gt;&#10;&lt;i&gt;concrete values for one culture / lab&lt;/i&gt;&#10;&#10;&lt;b&gt;Title:&lt;/b&gt; Urine specimen centrifugation parameters&#10;&#10;&lt;b&gt;Description:&lt;/b&gt; Configures centrifugation step for the urine culture profile.&#10;&#10;&lt;b&gt;AC (config-instance rubric):&lt;/b&gt;&#10;• When urine profile loaded, centrifuge step uses {speed: 1500g, duration: 5min, temp: 4°C}.&#10;• Values MUST be typed (units / enums).&#10;• Source SOP excerpt cited verbatim.&#10;• No MUST/SHALL pretense — this is data, not capability." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="325" width="395" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_s4" value="&lt;b&gt;CLEANUP / CORRECTION&lt;/b&gt;&#10;&lt;i&gt;modifies an existing artifact&lt;/i&gt;&#10;&#10;&lt;b&gt;Title:&lt;/b&gt; Remove Result Bucket option from Add/Modify QT code screens&#10;&#10;&lt;b&gt;Description:&lt;/b&gt; The Result Bucket field on QT code add/modify screens is no longer used after the schema change and should be removed.&#10;&#10;&lt;b&gt;AC (cleanup rubric):&lt;/b&gt;&#10;• Target artifact (screen path: Admin &gt; QT Codes &gt; Add/Modify) MUST be named.&#10;• Before/after states MUST be observable.&#10;• Regression risk acknowledged (downstream reads of the removed field)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="325" width="395" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wm_sec_c" value="SCHEMAS — what the agent emits (D9)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="635" width="1200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_schema_story" value="&lt;b&gt;Story schema&lt;/b&gt;&#10;{&#10;  id, epic_id,&#10;  shape ∈ {capability, workflow-stage-split,&#10;           configuration-instance, cleanup},&#10;  title, description,&#10;  acceptance_criteria[],   // {when, then, expected_value?}&#10;  source_citations[],      // SOP excerpt id + line range&#10;  dependencies[], cross_links[],&#10;  technical_hints?,&#10;  estimated_complexity ∈ {S,M,L},&#10;  edge_cases_handled[], status,&#10;  source_chunks[]&#10;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="40" y="675" width="800" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="wm_schema_epic" value="&lt;b&gt;Epic schema&lt;/b&gt;&#10;{&#10;  id, title, description,&#10;  discipline,                  // e.g., 'microbiology'&#10;  themes[],                    // soft theme tags (D3)&#10;  cyto_epic_analog?            // optional annotation per D13&#10;}&#10;&#10;&lt;b&gt;Notes&lt;/b&gt;&#10;• cyto_epic_analog lives ONLY on the Epic.&#10;  Stories inherit it via epic_id, no duplication.&#10;• shape on Story drives Validator routing (D7).&#10;• Anything failing schema is rejected at extraction.&#10;• Configuration values are NOT in the Story —&#10;  they live in per-culture YAML profiles (D12)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="860" y="675" width="800" height="320" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="Agent Pipeline" id="agent-pipeline">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="ap_title" value="Agent Pipeline — 5 agents, Validator gates twice" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1100" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_subtitle" value="Same Validator agent invoked at gate #1 (per-SOP stories) and gate #2 (synthesized capability stories); every story write passes through it" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1400" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_sec_a" value="PIPELINE — left to right, single batch run for an in-scope SOP cohort" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_n1" value="&lt;b&gt;1. EPIC EXTRACTOR&lt;/b&gt;&#10;&lt;i&gt;in: SOP cohort&lt;/i&gt;&#10;&lt;i&gt;out: Epics with cyto_epic_analog?&lt;/i&gt;&#10;&#10;Identifies capability domains for the discipline. Annotates each Epic with cyto_epic_analog when retrieval signal supports it (D13)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_n2" value="&lt;b&gt;2. STORY EXTRACTOR&lt;/b&gt;&#10;&lt;i&gt;per SOP, multi-shape&lt;/i&gt;&#10;&lt;i&gt;out: Stories with shape declared&lt;/i&gt;&#10;&#10;For each SOP: extracts Stories, choosing shape per element (capability / stage-split / config-instance / cleanup). Replicates Cyto mix; no in-SOP lifting (D10)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="145" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_n3" value="&lt;b&gt;3a. VALIDATOR — gate #1&lt;/b&gt;&#10;&lt;i&gt;type-aware sub-rubrics&lt;/i&gt;&#10;&lt;i&gt;in: per-SOP stories&lt;/i&gt;&#10;&#10;Verifies declared shape, applies shape-specific sub-rubric (D7). Two revisions, then SME-escalate with failed-checks visible." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="145" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_n4" value="&lt;b&gt;4. CROSS-SOP SYNTHESIS&lt;/b&gt;&#10;&lt;i&gt;batch — runs after gate #1 clears&lt;/i&gt;&#10;&lt;i&gt;out: capability stories&lt;/i&gt;&#10;&#10;Clusters concrete stories whose members come from ≥2 distinct SOPs. Emits capability-shaped story per cluster. Cross-links recorded; concrete + abstract coexist (D11)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="145" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_n5" value="&lt;b&gt;3b. VALIDATOR — gate #2&lt;/b&gt;&#10;&lt;i&gt;same agent as 3a&lt;/i&gt;&#10;&lt;i&gt;in: synthesized capability stories&lt;/i&gt;&#10;&#10;Validates capability stories from synthesis against the capability sub-rubric. Same revise/escalate flow." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="145" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_n6" value="&lt;b&gt;5. DEPENDENCY RESOLVER&lt;/b&gt;&#10;&lt;i&gt;final pass&lt;/i&gt;&#10;&lt;i&gt;out: Jira-ready artifacts&lt;/i&gt;&#10;&#10;Resolves story↔story dependencies, stage-split sibling links, and capability↔child cross-links from synthesis. Finalizes artifacts for Jira push." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="145" width="220" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ap_n1" target="ap_n2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ap_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ap_n2" target="ap_n3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ap_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ap_n3" target="ap_n4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ap_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ap_n4" target="ap_n5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ap_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ap_n5" target="ap_n6"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="ap_validator_link" value="same agent" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="700" y="380" width="640" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_validator_link_arc" style="endArrow=none;dashed=1;html=1;strokeColor=#888888;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="ap_n3" target="ap_n5"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="730" y="420"/><mxPoint x="1290" y="420"/></Array></mxGeometry></mxCell>
+
+        <mxCell id="ap_batch" value="&lt;b&gt;BATCH BOUNDARY&lt;/b&gt;&#10;Synthesis runs only after gate #1 has cleared all per-SOP stories from all in-scope SOPs. The batch wait is what makes cross-SOP recurrence detection possible." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888888;fontSize=10;align=left;verticalAlign=middle;dashed=1;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="450" width="540" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_sec_b" value="OUTPUTS — two streams" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="900" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_out1" value="&lt;b&gt;Output A — Jira artifacts&lt;/b&gt;&#10;&#10;• Epics (with optional cyto_epic_analog)&#10;• Stories — concrete (per-SOP, 4 shapes) + capability (synthesized, cross-linked to children)&#10;• Cross-links: stage-split siblings, capability↔child, story↔story dependencies" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f0ff;strokeColor=#6c8ebf;fontSize=11;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="800" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ap_out2" value="&lt;b&gt;Output B — Per-culture configuration profile (YAML)&lt;/b&gt;&#10;&#10;• One YAML profile per culture type in scope (urine, blood, target-pathogen for the POC)&#10;• Each value typed (units / enums / nullable) with citation back to the SOP excerpt&#10;• Inline references to the related Story's AC for traceability (D12)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="580" width="800" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_note_v" value="&lt;b&gt;Why two Validator gates?&lt;/b&gt;&#10;&#10;Synthesized capability stories are not a derivative of validated input — they're a NEW artifact produced by the Cross-SOP Synthesis agent. They must clear the same actionability bar as per-SOP stories. Hence gate #2.&#10;&#10;Diagrammatically split for clarity; in code it's one Validator service called from two sites in the orchestrator." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="780" width="1620" height="120" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="Validator Rubrics" id="validator-rubrics">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="vr_title" value="Validator Sub-Rubrics — one per Story shape (D7)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1100" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_subtitle" value="Validator first verifies the declared shape (catching misclassifications), then applies the shape-specific rubric. Same set of rubrics applied at both gates." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1500" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="vr_r1" value="&lt;b&gt;CAPABILITY rubric&lt;/b&gt;&#10;&#10;✓ AC use MUST / SHALL (not should / may).&#10;✓ Each AC is testable — specific values or observable outcomes.&#10;✓ No ambiguous quantifiers (&quot;appropriate&quot;, &quot;relevant&quot;, &quot;necessary&quot;).&#10;✓ Configurability boundaries called out — what's parameterized vs hard-coded.&#10;✓ Source SOP citation present and resolves.&#10;✓ Scope estimable (S / M / L).&#10;✓ Edge cases / error paths enumerated.&#10;&#10;&lt;b&gt;Rejected example:&lt;/b&gt;&#10;&lt;i&gt;Title:&lt;/i&gt; Support specimen rejection&#10;&lt;i&gt;AC:&lt;/i&gt; Validate input. Reject invalid specimens.&#10;&lt;i&gt;Why fails:&lt;/i&gt; no MUST/SHALL; &quot;invalid&quot; not defined; no parameters." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="800" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_r2" value="&lt;b&gt;WORKFLOW-STAGE-SPLIT rubric&lt;/b&gt;&#10;&#10;✓ Stage explicit in title (e.g., &quot;Before Work Has Started&quot;).&#10;✓ Stage-specific behavior testable — entry / exit conditions observable.&#10;✓ Sibling stories (other stages) enumerated and cross-linked.&#10;✓ Source SOP citation per sibling.&#10;✓ State-transition contract clear (what changes between stages).&#10;✓ Boundary cases at stage transitions handled.&#10;&#10;&lt;b&gt;Rejected example:&lt;/b&gt;&#10;&lt;i&gt;Title:&lt;/i&gt; PHI Update&#10;&lt;i&gt;AC:&lt;/i&gt; Allow user to update PHI on a case.&#10;&lt;i&gt;Why fails:&lt;/i&gt; no stage in title; siblings not enumerated; behavior identical across stages — should be one capability story or three split stories." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="860" y="100" width="800" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_r3" value="&lt;b&gt;CONFIGURATION-INSTANCE rubric&lt;/b&gt;&#10;&#10;✓ Concrete values present — no &quot;appropriate&quot; / &quot;reasonable&quot;.&#10;✓ Target config table or profile named.&#10;✓ Source SOP excerpt cited verbatim.&#10;✓ Values typed (units / enums / nullable rules).&#10;✓ Scope: which culture / lab / tenant the values apply to.&#10;✗ MUST / SHALL not required — this is data, not capability language.&#10;&#10;&lt;b&gt;Rejected example:&lt;/b&gt;&#10;&lt;i&gt;Title:&lt;/i&gt; Set up centrifugation for urine&#10;&lt;i&gt;AC:&lt;/i&gt; Configure appropriate spin speed and duration.&#10;&lt;i&gt;Why fails:&lt;/i&gt; &quot;appropriate&quot; — no concrete values; no units; no SOP citation; target table not named." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="800" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_r4" value="&lt;b&gt;CLEANUP / CORRECTION rubric&lt;/b&gt;&#10;&#10;✓ Target artifact named — id, screen path, or file path.&#10;✓ Before / after states observable (field present → field absent, etc.).&#10;✓ Regression risk acknowledged — what else might depend on the artifact.&#10;✓ Links to related artifacts being modified.&#10;✓ DoD: smoke test or QA path articulated.&#10;✗ MUST / SHALL not required — this is a corrective action.&#10;&#10;&lt;b&gt;Rejected example:&lt;/b&gt;&#10;&lt;i&gt;Title:&lt;/i&gt; Clean up unused fields&#10;&lt;i&gt;AC:&lt;/i&gt; Remove deprecated stuff.&#10;&lt;i&gt;Why fails:&lt;/i&gt; no target artifact; &quot;deprecated stuff&quot; — no specifics; no regression check." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="860" y="500" width="800" height="380" as="geometry" />
+        </mxCell>
+
+        <mxCell id="vr_sec_b" value="REVISE → REVISE → ESCALATE flow (applies at both validator gates)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="900" width="1200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f1" value="story input" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="940" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f2" value="Validator&#10;(verify shape +&#10;run sub-rubric)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="940" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f3" value="pass?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="540" y="940" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f4" value="ACCEPT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="720" y="940" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f5" value="revise (×1, ×2)&#10;return failed checks&#10;to extractor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1040" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_f6" value="SME ESCALATE&#10;(after 2 failed revisions)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="940" y="940" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="vr_e_a" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="vr_f1" target="vr_f2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="vr_e_b" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="vr_f2" target="vr_f3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="vr_e_c" value="yes" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="vr_f3" target="vr_f4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="vr_e_d" value="no" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="vr_f3" target="vr_f5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="vr_e_e" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=1;dashed=1;" edge="1" parent="1" source="vr_f5" target="vr_f2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="vr_e_f" value="exhausted" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#b85450;" edge="1" parent="1" source="vr_f5" target="vr_f6"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="Cross-SOP Synthesis &amp; Exemplar Corpus" id="synthesis-exemplar">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="ce_title" value="Cross-SOP Synthesis &amp; Exemplar Corpus" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1100" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_subtitle" value="Synthesis: how cross-SOP recurrence becomes a capability story (D11). Exemplar corpus: how curated examples train the agents and grow over time (D5, D8)." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1500" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_sec_a" value="SYNTHESIS — cross-SOP cluster ⇒ capability story" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_sop1" value="&lt;b&gt;Urine Culture SOP&lt;/b&gt;&#10;&#10;Concrete stories incl.:&#10;• Centrifuge urine specimen&#10;• Inoculate plate types A,B&#10;• Reject if turbid&#10;• ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="240" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_sop2" value="&lt;b&gt;Blood Culture SOP&lt;/b&gt;&#10;&#10;Concrete stories incl.:&#10;• Centrifuge plasma (positive bottle)&#10;• Subculture to plate types A,B,C&#10;• Reject if hemolyzed&#10;• ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="240" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_sop3" value="&lt;b&gt;Target-Pathogen SOP&lt;/b&gt;&#10;&#10;Concrete stories incl.:&#10;• Selective media inoculation&#10;• Reject if collection container wrong&#10;• ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="240" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_cluster" value="&lt;b&gt;Behavioral-similarity clustering&lt;/b&gt;&#10;&#10;Cluster concrete stories across SOPs by behavior — title + AC + source excerpt.&#10;&#10;Pre-filter: cluster qualifies only if its members come from &lt;b&gt;≥ 2 distinct SOPs&lt;/b&gt;. Two stories from the same SOP do NOT trigger lifting." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="280" width="320" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_lift" value="&lt;b&gt;Capability story emitted&lt;/b&gt;&#10;&#10;&lt;i&gt;Title:&lt;/i&gt; Configurable specimen rejection rules engine&#10;&#10;&lt;i&gt;AC:&lt;/i&gt;&#10;• System SHALL allow rule definition with {predicate, threshold, action}.&#10;• Rules apply per culture profile.&#10;• Rejection record emitted with rule-id, timestamp, operator.&#10;&#10;&lt;b&gt;cross_links[]&lt;/b&gt; →&#10;• Urine: &quot;Reject if turbid&quot;&#10;• Blood: &quot;Reject if hemolyzed&quot;&#10;• Pathogen: &quot;Reject if collection container wrong&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="240" width="380" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_n1" value="Concrete stories are KEPT in the backlog. The capability story is added as a sibling, not a replacement (D11)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="280" width="540" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_n2" value="The synthesized capability story passes through Validator gate #2 (capability sub-rubric) before being persisted." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="360" width="540" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_n3" value="Recurrence threshold (≥ 2 distinct SOPs) is tunable. With 3 SOPs in the POC, this means anything seen in 2 of 3 lifts. May be too aggressive — revisit with telemetry (OPEN_QUESTIONS)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="440" width="540" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.3;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_sop1" target="ce_cluster"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_sop2" target="ce_cluster"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.7;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_sop3" target="ce_cluster"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;endFill=1;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="ce_cluster" target="ce_lift"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="ce_sec_b" value="EXEMPLAR CORPUS — curate, use, accept, enrich (the growth loop)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="710" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_l1" value="&lt;b&gt;1. CURATE&lt;/b&gt;&#10;&lt;i&gt;SME-paired&lt;/i&gt;&#10;&#10;Pick a Cyto SOP excerpt + the SME-validated story it produced. Capture as (excerpt → story) tuple. ~10 tuples per shape to start." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="750" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_l2" value="&lt;b&gt;2. USE&lt;/b&gt;&#10;&lt;i&gt;at extraction time&lt;/i&gt;&#10;&#10;Story Extractor retrieves k=3–5 most relevant exemplars (hybrid BM25+dense over excerpt+story text) and includes them in the few-shot prompt." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="445" y="750" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_l3" value="&lt;b&gt;3. ACCEPT&lt;/b&gt;&#10;&lt;i&gt;validator + SME pass&lt;/i&gt;&#10;&#10;A generated Micro story that clears Validator and is SME-accepted (no further edits) becomes a candidate for the corpus." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="750" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_l4" value="&lt;b&gt;4. ENRICH&lt;/b&gt;&#10;&lt;i&gt;corpus grows&lt;/i&gt;&#10;&#10;Accepted Micro outputs join the exemplar corpus. Future extractions retrieve from a richer pool. Generalizes cleanly when Histology arrives." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1255" y="750" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_le1" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="ce_l1" target="ce_l2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_le2" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="ce_l2" target="ce_l3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_le3" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="ce_l3" target="ce_l4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ce_le4" value="loop back" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;dashed=1;strokeColor=#888888;" edge="1" parent="1" source="ce_l4" target="ce_l2"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1445" y="970"/><mxPoint x="635" y="970"/></Array></mxGeometry></mxCell>
+
+        <mxCell id="ce_note" value="&lt;b&gt;Generalization&lt;/b&gt;: when Histology arrives, the same agents run with the same exemplar corpus (now containing both Cyto-curated and Micro-accepted exemplars). No model retraining; just keep enriching the corpus." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=middle;fontStyle=2;spacingLeft=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1000" width="1620" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>

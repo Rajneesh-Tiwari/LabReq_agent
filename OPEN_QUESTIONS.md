@@ -19,7 +19,13 @@ Pending decisions or items awaiting stakeholder confirmation. Resolved items mov
 - [ ] **Cross-SOP synthesis recurrence threshold** — currently set at ≥2 SOPs to trigger a capability story (D11). With only 3 in-scope SOPs for the POC, this means *anything seen in 2 of 3* lifts. Is that too aggressive (will produce many capability stories)? Stricter alternative: ≥majority. Looser: ≥2 always. Revisit after first run.
 - [ ] **Cyto-epic-equivalence annotation source** (D13) — does a SME pre-curate the Cyto↔Micro epic mapping, or does the Epic Extractor infer it from retrieval signal? Inference is cheaper but less reliable; SME-curated table is more authoritative but requires upfront work.
 - [ ] **Story-shape classifier** — the Validator routes by shape (D7). Does the classifier need its own labeled training set, or can it run zero-shot off the schema definitions in D10? Recommendation: zero-shot first, label only the disagreements with SME.
-- [ ] **Synthesis-revision loop** — when the synthesis pass adds a capability story (D11), should the Validator re-validate the *child* concrete stories for consistency with the parent (e.g., do all PHI-stage children reference the same field set)? Or are they independent once promoted?
+- [ ] **Synthesis-revision loop** — when the synthesis pass adds a capability story (D11), should the Validator re-validate the *child* concrete stories for consistency with the parent (e.g., do all PHI-stage children reference the same field set)? Or are they independent once promoted? (The capability story itself does pass through the Validator at gate #2 per the corrected pipeline; this open question is about whether children are re-checked.)
+
+- [ ] **Cross-SOP synthesis clustering mechanism** — D11 specifies clustering "by behavioral similarity" but not the mechanism. Options: (a) embedding similarity over story title + AC + source SOP excerpt; (b) explicit feature extraction (action verbs, AC field overlap, target object); (c) LLM-as-clusterer prompt asking "are these the same behavior?". (a) is fast/cheap but coarse; (b) is interpretable but needs feature design; (c) is expensive but most semantic. Default to (a) for prototype, validate against SME on first run.
+
+- [ ] **4-shape coverage / escape hatch** — what happens when an SOP element doesn't fit any of the four shapes (capability / workflow-stage-split / configuration-instance / cleanup)? Plausible misfits: regulatory-compliance, non-functional/performance, external-integration. Currently no escape hatch — Validator would force misfit classification. Options: (a) add a 5th "other" shape with permissive rubric and mandatory SME review; (b) refuse extraction and flag for SME; (c) wait for evidence this is actually a problem before adding complexity.
+
+- [ ] **Per-culture configuration profile granularity** — D12 emits one profile per culture type. But a single SOP may describe multiple specimen variants (e.g., voided / catheter / midstream urine). Each variant gets its own profile, or one profile with sub-keys? Affects profile schema design.
 
 ## Quality / governance
 
@@ -27,6 +33,10 @@ Pending decisions or items awaiting stakeholder confirmation. Resolved items mov
 - [ ] **Story-acceptability bar — concrete examples per shape** — need: 5 "good" + 5 "rejected" examples for each of the four shapes (capability / workflow-stage-split / configuration-instance / cleanup), drawn from Cyto Jira where possible. Bar is shape-specific (D7) so the examples must be too.
 - [ ] **Eval framework** — how do we measure improvement? Per-shape acceptance rate (% passing Validator without revision)? End-to-end SME-acceptance rate? Per-discipline coverage?
 - [ ] **Configuration profile schema** — D12 sets YAML as default. Need: an actual schema for what fields a culture profile contains. Best derived from a worked example (urine culture profile filled in by SME) before generalizing.
+
+## Deferred design choices
+
+- [ ] **Tasks-as-output (deferred to v3.2 or later)** — D14 currently fixes Tasks as out-of-scope. If reversed later, three postures available: (A) titles + intent only; (B) constrained categories — automation / doc / acceptance-test, all Story-grounded so codebase access is not required; (C) full task generation with codebase access. Lean B if/when revisited. Current posture: validate v3.1 Story output first (NEXT_STEPS steps 7–11), don't pre-design Tasks. Reopens D14.
 
 ## Smaller architectural inconsistencies (from earlier QC pass)
 

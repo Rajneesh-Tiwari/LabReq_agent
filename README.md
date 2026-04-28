@@ -21,7 +21,7 @@ A proof-of-concept architecture for a chat-based system that extracts **dev-acti
 
 Started with: chat-based RAG → epic generation from SOPs.
 
-Currently at v3.1: **agent-based pipeline** (Epic Extractor → Story Extractor → Type-Aware Validator → Cross-SOP Synthesis → Dependency Resolver) that learns from curated Cyto examples, replicates Cyto's story-shape mix per-SOP, and lifts to capability stories only on cross-SOP recurrence. See `PROGRESS.md` for the full evolution and `DECISIONS.md` for the rationale.
+Currently at v3.1: **agent-based pipeline** — Epic Extractor → Story Extractor → Type-Aware Validator (gate #1) → Cross-SOP Synthesis → Type-Aware Validator (gate #2) → Dependency Resolver. The same Validator agent gates every story write, both per-SOP concrete stories and synthesized capability stories. The pipeline learns from curated Cyto examples, replicates Cyto's story-shape mix per-SOP, and lifts to capability stories only on cross-SOP recurrence. See `PROGRESS.md` for the full evolution and `DECISIONS.md` for the rationale.
 
 ## Viewing the diagrams
 

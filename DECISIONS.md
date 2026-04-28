@@ -64,7 +64,7 @@ Format: each decision has a date, the decision itself, the rationale, and the al
 
 **Decision:** The Jira hierarchy is **three levels**: Epic → Story → Task. The agent's deliverable is **Epics + Stories** only. Tasks are **out-of-scope** for the agent (see D14).
 
-**Rationale:** Direct evidence from Cyto's Jira backlog confirms a 3-level structure. Tasks reference test IDs, lib versions, internal validators, and other implementation-detail the agent cannot responsibly fabricate. Stories are where dev intent is captured at a level abstract enough for the agent to produce defensibly. Capabilities collapse into Epics (organizing layer); requirements fold into Story description + AC; configurations get their own stream (D12).
+**Rationale:** Direct evidence from Cyto's Jira backlog confirms a 3-level structure. Tasks reference test IDs, lib versions, internal validators, and other implementation-detail the agent cannot responsibly fabricate. Stories are where dev intent is captured at a level abstract enough for the agent to produce defensibly. The earlier v2 *capability layer* collapses into the Epic (organizing layer) for v3.1 — note that "capability" survives in v3.1 only as a **Story shape** (D10), not as a separate hierarchy level. Requirements fold into Story description + AC; configurations are emitted on **two channels** per D12 (inline in story AC + separate per-culture profile artifact).
 
 **Previously:** Earlier same-day framing was "two-layer" (Epic → Story). The 3-level reality was confirmed by Cyto Jira screenshots; the agent's *scope* remains Epic + Story but the platform's full hierarchy is acknowledged.
 
@@ -73,7 +73,7 @@ Format: each decision has a date, the decision itself, the rationale, and the al
 ## D7 — Story Validator with type-aware rubric is the quality gate
 **Date:** 2026-04-28 *(updated later same day to be type-aware)*
 
-**Decision:** Every generated story passes through a Validator agent (Haiku-class). The Validator first **classifies the story shape** (one of: capability / workflow-stage-split / configuration-instance / cleanup — see D10) and then applies a **shape-specific sub-rubric**:
+**Decision:** Every generated story — whether produced per-SOP by the Story Extractor or synthesized by the Cross-SOP Synthesis agent (D11) — passes through a Validator agent (Haiku-class). The Story Extractor declares the `shape` field at extraction time (D9). The Validator first **verifies that declared shape** (catching misclassifications by re-examining the story against shape definitions in D10), then applies the **shape-specific sub-rubric**:
 
 - **Capability shape:** AC use MUST/SHALL; parameters explicit; configurability boundaries called out; observable outcomes per AC; no ambiguous quantifiers; scope estimable (S/M/L); source citation present and resolves.
 - **Workflow-stage-split shape:** stage explicit in title; stage-specific behavior testable; sibling stories enumerated and cross-linked; entry/exit conditions for the stage observable.
@@ -97,11 +97,12 @@ Two revision attempts allowed, then SME escalation with the failed checks shown.
 
 ---
 
-## D9 — Story schema as the contract (extended for shape)
-**Date:** 2026-04-28 *(extended later same day to carry `shape` field)*
+## D9 — Story and Epic schemas as the contract
+**Date:** 2026-04-28 *(extended later same day with `shape` field on Story; Epic schema added explicitly)*
 
-**Decision:** Strict schema for the Story artifact:
+**Decision:** Strict schemas for both artifacts the agent emits.
 
+**Story schema:**
 ```
 {
   id, epic_id, shape ∈ {capability, workflow-stage-split, configuration-instance, cleanup},
@@ -114,14 +115,23 @@ Two revision attempts allowed, then SME escalation with the failed checks shown.
   estimated_complexity ∈ {S,M,L},
   edge_cases_handled[],
   status,
-  source_chunks[],
+  source_chunks[]
+}
+```
+
+**Epic schema:**
+```
+{
+  id, title, description,
+  discipline,                     // e.g., "microbiology"
+  themes[],                       // soft theme tags (D3)
   cyto_epic_analog?               // optional annotation, see D13
 }
 ```
 
-Anything that doesn't fit is rejected at extraction time. The `shape` field drives Validator routing (D7).
+Anything that doesn't fit is rejected at extraction time. The `shape` field on Story drives Validator routing (D7). The `cyto_epic_analog` annotation lives **on the Epic** (per D13), not on the Story — Stories inherit the analog through their `epic_id` link.
 
-**Rationale:** Schema enforcement is how we *structurally* prevent vague stories from reaching the SME. The schema itself encodes the actionability bar. The `shape` field makes the bar shape-aware.
+**Rationale:** Schema enforcement is how we *structurally* prevent vague stories from reaching the SME. The schema itself encodes the actionability bar. The `shape` field makes the bar shape-aware. Putting the Cyto-equivalence annotation on the Epic (not the Story) avoids duplicating the same annotation across every Story under that Epic, and matches D13's framing of equivalence as an epic-level architectural mapping.
 
 ---
 
@@ -148,11 +158,11 @@ Anything that doesn't fit is rejected at extraction time. The `shape` field driv
 ## D11 — Cross-SOP synthesis lifts capability stories on recurrence; concrete + abstract coexist
 **Date:** 2026-04-28
 
-**Decision:** A **cross-SOP synthesis pass** runs **after all in-scope SOPs have been extracted** (batch, not progressive). It clusters concrete stories across SOPs by behavioral similarity and, for clusters of size ≥ 2, emits an additional **capability-shaped story** that abstracts the variable parts as parameters. Both the per-SOP concrete stories **and** the synthesized capability story are kept and pushed to Jira. Cross-links are recorded (capability story → child concrete stories; child concrete stories → parent capability story).
+**Decision:** A **cross-SOP synthesis pass** runs **after all in-scope SOPs have been extracted and validated** (batch, not progressive). It clusters concrete stories across SOPs by behavioral similarity and, for clusters whose member stories come from **≥ 2 distinct SOPs**, emits an additional **capability-shaped story** that abstracts the variable parts as parameters. The "≥ 2 distinct SOPs" rule is what makes this *cross-SOP* recurrence — two stories drawn from the same SOP do not qualify on their own. Synthesized capability stories are then sent through the Validator (per D7). Both the per-SOP concrete stories **and** the synthesized capability story are kept and pushed to Jira. Cross-links are recorded (capability story → child concrete stories; child concrete stories → parent capability story).
 
-**Rationale:** Abstraction is only defensible when grounded in cross-SOP evidence. A single SOP cannot reveal which details are variable vs. fixed. Coexistence (rather than supersession) preserves the granular sprint-ready stories the dev team needs while giving the architecture team a capability anchor for platform planning.
+**Rationale:** Abstraction is only defensible when grounded in **cross-SOP** evidence. A single SOP cannot reveal which details are variable vs. fixed; multiple stories within one SOP often describe stage-splits of the *same* behavior, not independent witnesses to a recurring capability. Coexistence (rather than supersession) preserves the granular sprint-ready stories the dev team needs while giving the architecture team a capability anchor for platform planning.
 
-**Open:** Recurrence threshold (≥2 SOPs vs. majority vs. all). Currently set at ≥2 for the 3-SOP POC; revisit with telemetry. See `OPEN_QUESTIONS.md`.
+**Open:** Recurrence threshold across SOPs (≥ 2 distinct SOPs vs. ≥ majority vs. all). Currently set at ≥ 2 distinct SOPs for the 3-SOP POC; this means anything seen in 2 of 3 SOPs lifts. May be too aggressive — revisit with telemetry. See `OPEN_QUESTIONS.md`.
 
 ---
 
@@ -161,12 +171,12 @@ Anything that doesn't fit is rejected at extraction time. The `shape` field driv
 
 **Decision:** Configuration values surfaced from each SOP are emitted on **two channels**:
 
-- (a) **Inline in the related capability story's AC** — for traceability (e.g., AC: *"when urine profile is loaded, centrifuge step uses {speed: 1500g, duration: 5min}"*).
+- (a) **Inline in the related Story's AC** — for traceability. During per-SOP extraction this is the *concrete story* the value was extracted from (e.g., a configuration-instance story like *"Urine specimen centrifugation parameters"*). After cross-SOP synthesis (D11) lifts a capability story over multiple concrete configuration-instance stories, the capability story's AC reference the parameter *names and types* and link to the per-culture profile (b) for actual values.
 - (b) **A separate per-culture configuration profile artifact** — YAML (or spreadsheet, if SME prefers) — as the source-of-truth for what values populate the platform for each culture type. One artifact per culture type (urine, blood, target pathogens for the POC).
 
-**Rationale:** Inline alone makes the configs hard to operate on (no single-source view). Profile-only loses the link between the capability story and its concrete values. Both channels solve the dual need.
+**Rationale:** Inline alone makes the configs hard to operate on (no single-source view). Profile-only loses the link between the story and its concrete values. Both channels solve the dual need: traceability (story ↔ value) is preserved by (a); operational single-source-of-truth is preserved by (b).
 
-**Format:** YAML default, with field `cyto_epic_analog` available where relevant (D13). Each value typed (units / enums / nullable) with citation back to the SOP excerpt.
+**Format:** YAML default. Each value typed (units / enums / nullable) with citation back to the SOP excerpt that produced it. Profile fields are scoped per culture-type, not per epic — so `cyto_epic_analog` (D13) does not appear here; it's an Epic-level annotation, not a profile-level one.
 
 ---
 

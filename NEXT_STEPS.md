@@ -5,10 +5,10 @@ Concrete actions, in order.
 ## Immediate
 
 1. **Build new drawio pages 9–12** capturing the v3.1 agent-based architecture:
-   - **Page 9 — Working Model:** SOP → Epic → Story (3-level Cyto Jira hierarchy with Tasks marked out-of-scope), the **four story shapes** (capability / workflow-stage-split / configuration-instance / cleanup) with one concrete example per shape, and the v3.1 story schema (including the `shape` and `cyto_epic_analog` fields).
-   - **Page 10 — Agent Pipeline:** five agents — Epic Extractor → Story Extractor → Story Validator (type-aware) → Cross-SOP Synthesis → Dependency Resolver. Show batch boundary (synthesis runs after all SOPs are extracted) and the dual output streams (Stories + per-culture Configuration Profile).
-   - **Page 11 — Validator Rubrics:** the four shape-specific sub-rubrics from D7, side-by-side. Plus the revise (×2) → SME-escalate flow with failed-checks visibility.
-   - **Page 12 — Cross-SOP Synthesis & Exemplar Corpus:** synthesis trigger logic (cluster concrete stories across SOPs by behavioral similarity, ≥2-SOP recurrence threshold), exemplar curation flow, and the growth loop where accepted Micro outputs become future exemplars.
+   - **Page 9 — Working Model:** SOP → Epic → Story (3-level Cyto Jira hierarchy with Tasks marked out-of-scope), the **four story shapes** (capability / workflow-stage-split / configuration-instance / cleanup) with one concrete example per shape, and the v3.1 schemas — Story schema (with `shape` field) and Epic schema (with `cyto_epic_analog?` annotation).
+   - **Page 10 — Agent Pipeline:** Epic Extractor → Story Extractor → **Validator** (gate #1) → Cross-SOP Synthesis → **Validator** (gate #2) → Dependency Resolver. Show: same Validator agent invoked at both gates; every story write passes through it; batch boundary (synthesis runs only after gate #1 has cleared all per-SOP stories); dual output streams (Stories + per-culture Configuration Profile).
+   - **Page 11 — Validator Rubrics:** the four shape-specific sub-rubrics from D7, side-by-side. Plus the revise (×2) → SME-escalate flow with failed-checks visibility. Note the Validator *verifies* the declared shape (D9) before applying the rubric.
+   - **Page 12 — Cross-SOP Synthesis & Exemplar Corpus:** synthesis trigger logic (cluster concrete stories whose members come from ≥ 2 distinct SOPs by behavioral similarity), exemplar curation flow, and the growth loop where accepted Micro outputs become future exemplars.
 2. **Light edits to existing pages 1–8** — small annotations (not structural changes) re-labeling retrieval primitives as exemplar-retrieval consumers in the agent pipeline.
 
 ## Short-term
