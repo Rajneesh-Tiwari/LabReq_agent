@@ -1,2 +1,7 @@
 *:Zone.Identifier
 .DS_Store
+
+# Internal screenshots / raw client data — never push
+1000*.jpg
+1000*.jpeg
+1000*.png

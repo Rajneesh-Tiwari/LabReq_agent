@@ -1,6 +1,6 @@
 # Architectural Decisions Log
 
-Format: each decision has a date, the decision itself, the rationale, and the alternatives considered.
+Format: each decision has a date, the decision itself, the rationale, and the alternatives considered. When a later decision refines an earlier one, the earlier entry has an **Updated** note pointing forward.
 
 ---
 
@@ -59,29 +59,32 @@ Format: each decision has a date, the decision itself, the rationale, and the al
 
 ---
 
-## D6 — Two-layer hierarchy: Epic → Story (story is the deliverable)
-**Date:** 2026-04-28
+## D6 — Jira hierarchy: Epic → Story → Task; agent stops at Story
+**Date:** 2026-04-28 *(updated later same day after reviewing real Cyto Jira)*
 
-**Decision:** Collapse the earlier 4-layer model (SOP → Capability → Requirement → Configuration) to two: SOP → Epic → Story. Story is the actual deliverable to dev teams.
+**Decision:** The Jira hierarchy is **three levels**: Epic → Story → Task. The agent's deliverable is **Epics + Stories** only. Tasks are **out-of-scope** for the agent (see D14).
 
-**Rationale:** Client requirement — *"clear, unambiguous stories that can be acted upon by dev teams."* The 4-layer abstraction was useful for thinking but the dev team only acts on stories. Capabilities collapse into epics (organizing layer). Requirements fold into story description + AC. Configurations either embed in stories (as AC details) or get left to dev judgment.
+**Rationale:** Direct evidence from Cyto's Jira backlog confirms a 3-level structure. Tasks reference test IDs, lib versions, internal validators, and other implementation-detail the agent cannot responsibly fabricate. Stories are where dev intent is captured at a level abstract enough for the agent to produce defensibly. Capabilities collapse into Epics (organizing layer); requirements fold into Story description + AC; configurations get their own stream (D12).
+
+**Previously:** Earlier same-day framing was "two-layer" (Epic → Story). The 3-level reality was confirmed by Cyto Jira screenshots; the agent's *scope* remains Epic + Story but the platform's full hierarchy is acknowledged.
 
 ---
 
-## D7 — Story Validator with rubric is the quality gate
-**Date:** 2026-04-28
+## D7 — Story Validator with type-aware rubric is the quality gate
+**Date:** 2026-04-28 *(updated later same day to be type-aware)*
 
-**Decision:** Every generated story passes through a Validator agent (Haiku-class) that checks against an explicit rubric:
-- AC use MUST/SHALL, not "should/may"
-- Each AC is testable (specific values, observable outcomes)
-- No ambiguous quantifiers ("appropriate", "relevant", "necessary")
-- Source citation present and resolves
-- Scope estimable (S/M/L)
-- Edge cases / error paths enumerated
+**Decision:** Every generated story passes through a Validator agent (Haiku-class). The Validator first **classifies the story shape** (one of: capability / workflow-stage-split / configuration-instance / cleanup — see D10) and then applies a **shape-specific sub-rubric**:
 
-Two revision attempts allowed before SME escalation.
+- **Capability shape:** AC use MUST/SHALL; parameters explicit; configurability boundaries called out; observable outcomes per AC; no ambiguous quantifiers; scope estimable (S/M/L); source citation present and resolves.
+- **Workflow-stage-split shape:** stage explicit in title; stage-specific behavior testable; sibling stories enumerated and cross-linked; entry/exit conditions for the stage observable.
+- **Configuration-instance shape:** concrete values present (no "appropriate"); target config table named; source SOP excerpt cited verbatim; values typed (units / enums); no MUST/SHALL pretense (this isn't capability language).
+- **Cleanup/correction shape:** target artifact (id/path/screen) named; before/after observable; regression risk acknowledged; links to the artifact being modified.
 
-**Rationale:** The actionability bar can only be enforced *structurally*. Without the validator, the system produces plausible-but-vague output that erodes dev team trust.
+Two revision attempts allowed, then SME escalation with the failed checks shown.
+
+**Rationale:** A single rubric over-fits to capability stories and rejects perfectly good configuration-instance and cleanup stories that don't (and shouldn't) read with MUST/SHALL. The actionability bar is shape-dependent; the Validator must enforce it shape-by-shape.
+
+**Previously:** A single MUST/SHALL-centric rubric was the original D7. After reviewing real Cyto Jira shapes, this was generalized.
 
 ---
 
@@ -94,11 +97,102 @@ Two revision attempts allowed before SME escalation.
 
 ---
 
-## D9 — Story schema as the contract
+## D9 — Story schema as the contract (extended for shape)
+**Date:** 2026-04-28 *(extended later same day to carry `shape` field)*
+
+**Decision:** Strict schema for the Story artifact:
+
+```
+{
+  id, epic_id, shape ∈ {capability, workflow-stage-split, configuration-instance, cleanup},
+  title, description,
+  acceptance_criteria[],          // each AC: {when, then, expected_value?}
+  source_citations[],             // SOP excerpt id + line range
+  dependencies[],                 // other story ids
+  cross_links[],                  // sibling stories (e.g., stage-split siblings) and capability-parent
+  technical_hints?,
+  estimated_complexity ∈ {S,M,L},
+  edge_cases_handled[],
+  status,
+  source_chunks[],
+  cyto_epic_analog?               // optional annotation, see D13
+}
+```
+
+Anything that doesn't fit is rejected at extraction time. The `shape` field drives Validator routing (D7).
+
+**Rationale:** Schema enforcement is how we *structurally* prevent vague stories from reaching the SME. The schema itself encodes the actionability bar. The `shape` field makes the bar shape-aware.
+
+---
+
+## D10 — Stories have four shapes; per-SOP extraction replicates the Cyto mix
 **Date:** 2026-04-28
 
-**Decision:** Define a strict schema for the Story artifact: `{id, epic_id, title, description, acceptance_criteria[], source_citations[], dependencies[], technical_hints?, estimated_complexity, edge_cases_handled[], status, source_chunks[]}`. Each AC has structure: `{when, then, expected_value?}`.
+**Decision:** Stories are typed by **shape**, with four allowed values:
 
-Anything that doesn't fit is rejected at extraction time.
+1. **Capability** — describes a configurable system feature. Example pattern: *"As {role}, I want {feature} so that {benefit}; the system MUST support configuration of {params}."*
+2. **Workflow-stage-split** — same underlying capability, decomposed by workflow stage. One story per stage. Example pattern observed in Cyto: PHI Update *Before Work Has Started* / *After Work Has Started* / *After Results Are Reported* — three stories, one capability.
+3. **Configuration-instance** — concrete values for a specific lab / culture profile. Example pattern: *"Lab setup: accession and lab code combination to identify {Connect Cytology / Connect Microbiology} orders per Lab."*
+4. **Cleanup/correction** — modifies an existing artifact. Example pattern: *"Need to remove Result Bucket option from Add/Modify QT code screens."*
 
-**Rationale:** Schema enforcement is how we *structurally* prevent vague stories from reaching the SME. The schema itself encodes the actionability bar.
+**Per-SOP extraction follows option A — replicate the Cyto mix.** The Story Extractor produces stories at whichever shape best matches each SOP element. It does **not** lift to a single capability story per SOP. Output of any single SOP looks shape-for-shape like Cyto's existing backlog.
+
+**Rationale:** Real Cyto Jira evidence shows stories live across all four shapes. Forcing one abstraction level (e.g., always-capability) would not match how the dev team plans sprints, and would obscure stage-specific testability. Replicating the mix is more work for the agent but produces output the dev team can consume without re-decomposition.
+
+**Alternatives considered:**
+- Option B (normalize to capability + configuration only) — rejected as breaking dev team's planning rhythm.
+- Option C (replicate mix per-SOP *and* lift in-SOP) — rejected as risk of agent fabricating capability boundaries from a single source.
+
+---
+
+## D11 — Cross-SOP synthesis lifts capability stories on recurrence; concrete + abstract coexist
+**Date:** 2026-04-28
+
+**Decision:** A **cross-SOP synthesis pass** runs **after all in-scope SOPs have been extracted** (batch, not progressive). It clusters concrete stories across SOPs by behavioral similarity and, for clusters of size ≥ 2, emits an additional **capability-shaped story** that abstracts the variable parts as parameters. Both the per-SOP concrete stories **and** the synthesized capability story are kept and pushed to Jira. Cross-links are recorded (capability story → child concrete stories; child concrete stories → parent capability story).
+
+**Rationale:** Abstraction is only defensible when grounded in cross-SOP evidence. A single SOP cannot reveal which details are variable vs. fixed. Coexistence (rather than supersession) preserves the granular sprint-ready stories the dev team needs while giving the architecture team a capability anchor for platform planning.
+
+**Open:** Recurrence threshold (≥2 SOPs vs. majority vs. all). Currently set at ≥2 for the 3-SOP POC; revisit with telemetry. See `OPEN_QUESTIONS.md`.
+
+---
+
+## D12 — Configuration extraction: inline AC + per-culture profile artifact
+**Date:** 2026-04-28
+
+**Decision:** Configuration values surfaced from each SOP are emitted on **two channels**:
+
+- (a) **Inline in the related capability story's AC** — for traceability (e.g., AC: *"when urine profile is loaded, centrifuge step uses {speed: 1500g, duration: 5min}"*).
+- (b) **A separate per-culture configuration profile artifact** — YAML (or spreadsheet, if SME prefers) — as the source-of-truth for what values populate the platform for each culture type. One artifact per culture type (urine, blood, target pathogens for the POC).
+
+**Rationale:** Inline alone makes the configs hard to operate on (no single-source view). Profile-only loses the link between the capability story and its concrete values. Both channels solve the dual need.
+
+**Format:** YAML default, with field `cyto_epic_analog` available where relevant (D13). Each value typed (units / enums / nullable) with citation back to the SOP excerpt.
+
+---
+
+## D13 — Cyto-epic equivalence captured as annotation, not structural mapping
+**Date:** 2026-04-28
+
+**Decision:** Where a Micro epic appears to mirror a Cyto epic (e.g., Micro Billing ↔ Cytology Billing), the equivalence is recorded as an **optional annotation field** on the Micro epic (`cyto_epic_analog: <cyto-epic-id>`), populated by the Epic Extractor when retrieval signal supports it. It is **not** a structural mapping that drives downstream behavior.
+
+**Rationale:** A structural mapping would couple Micro generation to Cyto's epic taxonomy and break when Histology arrives with different domain shape. Annotation pays off for: (i) human reviewers seeing the mental map, (ii) future v2 extension-mode where the agent diffs against existing Connect platform capabilities and only proposes deltas. It does not constrain the current generation logic.
+
+---
+
+## D14 — Tasks are out-of-scope for the agent
+**Date:** 2026-04-28
+
+**Decision:** The agent does not generate Jira Tasks. The handoff to dev teams is at the **Story** level. Dev teams decompose stories into tasks themselves once they have visibility into the codebase.
+
+**Rationale:** Real Cyto Tasks reference test IDs, internal lib versions, validator implementations, DB column names, and other impl-specific detail the agent cannot responsibly fabricate. Generating Tasks would either produce hallucinated implementation choices or duplicate the dev team's own decomposition work. Stopping at Story preserves agent value (specification) without overreach into implementation.
+
+---
+
+## D15 — Platform name is "Connect"; greenfield assumption with deferred extension-mode
+**Date:** 2026-04-28
+
+**Decision:** Labcorp's LIMS platform is named **Connect**. Cyto runs on Connect today (existing system); Micro is being built on Connect. The POC operates under a **greenfield assumption** — the agent generates all stories needed to build the Micro experience on Connect, including capabilities that already exist in Connect-Cyto. A v2 **extension-mode** (where the agent diffs against existing Connect-Cyto capabilities and emits only deltas / Micro-specific extensions) is deferred.
+
+**Rationale:** Greenfield is simpler to evaluate and demo. Extension-mode requires a Connect capability inventory the agent doesn't currently have access to. The annotation in D13 keeps the door open for extension-mode without coupling the current build to it.
+
+**Implication:** Stories will reference "the platform" or "Connect" interchangeably in output text (per Cyto convention — Cyto stories reference "Connect Cytology orders"). For Micro, equivalent references read "Connect Microbiology."

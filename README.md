@@ -2,7 +2,7 @@
 
 ## What this is
 
-A proof-of-concept architecture for a chat-based system that extracts **dev-actionable Jira stories** from clinical laboratory SOPs. The system uses agents trained on existing-discipline (Cytology) examples to produce stories for new disciplines (Microbiology, Histology), preserving traceability to source documents.
+A proof-of-concept architecture for a chat-based system that extracts **dev-actionable Jira stories** from clinical laboratory SOPs, targeting Labcorp's **Connect** LIMS platform. The system uses agents trained on existing-discipline (Cytology) examples to produce stories for new disciplines (Microbiology, Histology) — replicating the multi-shape mix observed in real Cyto Jira (capability / workflow-stage-split / configuration-instance / cleanup) rather than normalizing to a single abstraction. A cross-SOP synthesis pass adds capability stories where patterns recur. Per-culture configuration profiles are emitted alongside the stories.
 
 ## What's in this repo
 
@@ -21,7 +21,7 @@ A proof-of-concept architecture for a chat-based system that extracts **dev-acti
 
 Started with: chat-based RAG → epic generation from SOPs.
 
-Currently at: **agent-based pipeline** that learns from curated Cyto examples and produces dev-actionable stories for Micro. See `PROGRESS.md` for the full evolution and `DECISIONS.md` for the rationale.
+Currently at v3.1: **agent-based pipeline** (Epic Extractor → Story Extractor → Type-Aware Validator → Cross-SOP Synthesis → Dependency Resolver) that learns from curated Cyto examples, replicates Cyto's story-shape mix per-SOP, and lifts to capability stories only on cross-SOP recurrence. See `PROGRESS.md` for the full evolution and `DECISIONS.md` for the rationale.
 
 ## Viewing the diagrams
 
