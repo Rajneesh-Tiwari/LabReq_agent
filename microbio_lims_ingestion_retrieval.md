@@ -1,6 +1,6 @@
 # Microbiology LIMS POC — Ingestion & Retrieval Architecture
 
-Companion to `microbio_lims_ingestion_retrieval.drawio` (two pages: Ingestion · Retrieval). Open in [app.diagrams.net](https://app.diagrams.net/) or the VS Code drawio extension; export to PNG/PDF/SVG for slides.
+Companion to `microbio_lims_architecture.drawio` (Ingestion + Retrieval pages — pages 5 and 7 in the deck). Open in [app.diagrams.net](https://app.diagrams.net/) or the VS Code drawio extension; export to PNG/PDF/SVG for slides.
 
 ---
 

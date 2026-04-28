@@ -1,6 +1,6 @@
 # Microbiology LIMS POC — Glossary & Examples
 
-Companion to `microbio_lims_ingestion_retrieval.drawio`. Every term and block in the diagrams is defined here in plain language with a Microbiology / Labcorp example.
+Companion to `microbio_lims_architecture.drawio`. Every term and block in the diagrams is defined here in plain language with a Microbiology / Labcorp example.
 
 ---
 
