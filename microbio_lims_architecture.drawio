@@ -62,6 +62,10 @@
           <mxGeometry x="860" y="675" width="800" height="320" as="geometry" />
         </mxCell>
 
+        <mxCell id="wm_v32_note" value="&lt;b&gt;v3.2 update:&lt;/b&gt; Epic candidates are now produced by the &lt;i&gt;conditioned&lt;/i&gt; Epic Extractor — drafts get matched against the prior epic catalog (cyto_epic_v1) before clustering anything novel; epic_analog is populated by construction. A new pre-flight &lt;b&gt;Theme Discovery&lt;/b&gt; agent bootstraps a discipline's theme catalog by warm-starting against an existing prior. See pages &quot;v3.2 Theme Discovery&quot;, &quot;v3.2 Conditioned Epic Extractor&quot;, and &quot;v3.2 ANALOGY Map&quot; for details." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#9673a6;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1010" width="1620" height="60" as="geometry" />
+        </mxCell>
+
       </root>
     </mxGraphModel>
   </diagram>
@@ -129,6 +133,10 @@
 
         <mxCell id="ap_note_v" value="&lt;b&gt;Why two Validator gates?&lt;/b&gt;&#10;&#10;Synthesized capability stories are not a derivative of validated input — they're a NEW artifact produced by the Cross-SOP Synthesis agent. They must clear the same actionability bar as per-SOP stories. Hence gate #2.&#10;&#10;Diagrammatically split for clarity; in code it's one Validator service called from two sites in the orchestrator." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
           <mxGeometry x="40" y="780" width="1620" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ap_v32_note" value="&lt;b&gt;v3.2 update:&lt;/b&gt; the Epic Extractor (1) now runs in &lt;b&gt;conditioned mode&lt;/b&gt; — drafts get classified against the prior epic catalog (cyto_epic_v1) at threshold τ_match before any clustering; matched drafts inherit epic_analog by construction. The other four agents are unchanged in shape. A NEW pre-flight agent — &lt;b&gt;Theme Discovery&lt;/b&gt; — runs once per discipline (or on G0 alarm) BEFORE this main pipeline boots; it emits the versioned theme catalog (e.g. cyto_v1, histo_v1) that the rest of the system resolves themes against. See &quot;v3.2 Theme Discovery&quot;, &quot;v3.2 Conditioned Epic Extractor&quot;, and &quot;v3.2 ANALOGY Map&quot; for the full architecture." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#9673a6;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="920" width="1620" height="80" as="geometry" />
         </mxCell>
 
       </root>

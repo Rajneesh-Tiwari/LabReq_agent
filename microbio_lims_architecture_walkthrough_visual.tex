@@ -25,7 +25,7 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{\small Microbiology LIMS POC --- v3.1 (visual)}
+\rhead{\small Microbiology LIMS POC --- v3.2 (visual)}
 \lhead{\small Process Reference + Block Diagrams}
 \rfoot{\small \thepage}
 
@@ -66,7 +66,7 @@
 
 \begin{center}
 {\Large\bfseries Microbiology LIMS POC --- Process Reference (with Block Diagrams)}\\[2pt]
-{\small Visual companion to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
+{\small v3.2 (Conditioned Discovery) \quad\textbar\quad Visual companion to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
 \end{center}
 
 \section{What the system does}
@@ -74,6 +74,8 @@
 A subject-matter expert (SME) drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid retrieval substrate (BM25 + dense), reads them and emits two artifacts: \textbf{(A)} a Jira-ready Epic / Story tree, and \textbf{(B)} per-culture YAML configuration profiles (urine, blood, target-pathogen).
 
 The Cytology Jira backlog is used as a \emph{teaching corpus} (few-shot exemplars), not a registry to match against. The agent stops at Story --- Tasks (test IDs, library versions, DB columns) are dev-authored once the team has codebase visibility.
+
+\textbf{v3.2 addition --- Conditioned Discovery.} v3.1 generated epics from-scratch and treated themes G1--G8 as a closed Cyto-derived vocabulary. v3.2 adds a \emph{warm-start} step at both levels: a new pre-flight \textbf{Theme Discovery agent} bootstraps a discipline's theme catalog by classifying its SOPs against the prior taxonomy first and surfacing only the residual as novel; the \textbf{Epic Extractor runs in conditioned mode}, classifying drafts against the prior epic catalog (\texttt{cyto\_epic\_v1}) before clustering anything new. The result: most themes and epics inherit by construction with explicit lineage, and only genuinely-novel structure (with cluster evidence) goes to SME for ratification. See the v3.2 sections below.
 
 \textbf{Color legend:} \tikz[baseline=-0.5ex]\node[src,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{src};\, source/data \quad
 \tikz[baseline=-0.5ex]\node[cmp,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{cmp};\, compute \quad
@@ -99,6 +101,16 @@ Intent & Structured interpretation of a user query: \texttt{\{action, themes, di
 $\tau$ (tau) & Intent-confidence threshold ($0.7$). Below this, the system asks a clarifying question rather than retrieving.\\
 $\theta$ (theta) & Retrieval-relevance threshold ($0.5$). If every slot falls below this, the system refuses to generate.\\
 Batch wait & The pipeline pause between Validator gate \#1 and Cross-SOP Synthesis. Synthesis cannot run until every per-SOP Story has cleared gate \#1.\\
+\midrule
+\multicolumn{2}{@{}l}{\itshape v3.2 additions:}\\
+Conditioned discovery & A four-pass procedure (classify $\rightarrow$ cluster residual $\rightarrow$ SME ratify $\rightarrow$ re-tag) that warm-starts a new catalog against an existing prior, rather than clustering from scratch. Applied at both theme and epic levels.\\
+Prior catalog & The existing themes (or epics) that conditioned discovery treats as the structure-to-reuse. Cyto's catalogs are the prior for both Micro and Histology bootstraps.\\
+Residual & Inputs whose classification confidence falls below $\tau_{\text{match}}$ in Pass 1. Only residuals are clustered for novelty.\\
+$\tau_{\text{match}}$ & Match-confidence threshold for Pass 1 (default $0.65$). Distinct from the query-time $\tau$ above. Higher $\tau_{\text{match}}$ $\Rightarrow$ eager-to-inherit.\\
+$\varepsilon_{\text{novelty}}$ & Minimum cluster size in Pass 2 (default $3$). Higher $\Rightarrow$ stricter evidence bar before admitting a novel theme/epic.\\
+G0 / E0 & First-class \emph{unclassified} bucket on every theme catalog (G0) and epic catalog (E0). 5\% alarm threshold over a rolling window triggers re-running discovery.\\
+Catalog versioning & Theme catalogs are named \texttt{<discipline>\_v<N>} (e.g.\ \texttt{cyto\_v1}, \texttt{histo\_v1}); epic catalogs are named \texttt{<discipline>\_epic\_v<N>} (e.g.\ \texttt{cyto\_epic\_v1}). They version independently. Stories carry a \texttt{theme\_catalog\_version} field for theme resolution.\\
+ANALOGY map & Explicit cross-catalog link table. Each link typed: \texttt{identical} / \texttt{partial} / \texttt{discarded\_in\_target} / \texttt{novel\_in\_target}. Replaces v3.1's implicit shared-theme assumption.\\
 \bottomrule
 \end{tabularx}
 
@@ -143,9 +155,78 @@ Batch wait & The pipeline pause between Validator gate \#1 and Cross-SOP Synthes
   \item \textbf{Dependency Resolver} --- story$\leftrightarrow$story dependencies, stage-split sibling links, capability$\leftrightarrow$child links. Finalizes the artifact graph for Jira push.
 \end{enumerate}
 
+\textbf{v3.2 modifications inside the main pipeline:} the Epic Extractor (1) gains \emph{conditioned mode} --- it classifies its drafts against the prior epic catalog before clustering anything as novel. The other four agents are unchanged in shape. A \emph{new sixth agent} --- the \textbf{Theme Discovery agent} --- runs as pre-flight (one-time per discipline), not on the per-SOP critical path. Both are detailed in the next two sections.
+
 % =====================================================================
-\section{Four story shapes --- what ``shape'' means}
+\section{v3.2 Theme Discovery --- pre-flight, one-time per discipline}
 % =====================================================================
+
+Theme Discovery runs \emph{before} the main pipeline boots for a new discipline (and again only when the G0 alarm trips). Its job: emit a versioned theme catalog (e.g.\ \texttt{histo\_v1}) by warm-starting against an existing prior (e.g.\ \texttt{cyto\_v1}). Most themes inherit; novel ones must clear an evidence bar and an SME gate.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.45cm and 0.5cm]
+  \node[src, minimum width=2.3cm] (prior) {\textbf{prior catalog}\\\tiny \texttt{cyto\_v1}\\\tiny G1--G8 + centroids};
+  \node[src, minimum width=2.3cm, below=0.5cm of prior] (sops) {\textbf{discipline SOPs}\\\tiny \mbox{15--30 sample}\\\tiny $\sim$600 chunks};
+  \coordinate (mid) at ($(prior.east)!0.5!(sops.east)$);
+  \node[ai, minimum width=2.3cm, right=1.3cm of mid] (p1) {\textbf{Pass 1}\\\textbf{CLASSIFY}\\\tiny score $\geq \tau_{\text{match}}$\\\tiny $\Rightarrow$ assign;\\\tiny else: residual};
+  \node[ai, minimum width=2.3cm, right=of p1] (p2) {\textbf{Pass 2}\\\textbf{CLUSTER}\\\tiny residuals only,\\\tiny size $\geq \varepsilon_{\text{novelty}}$\\\tiny $\Rightarrow$ candidate};
+  \node[val, minimum width=2.3cm, right=of p2] (p3) {\textbf{Pass 3}\\\textbf{SME RATIFY}\\\tiny novel candidates\\\tiny + G0 sample\\\tiny (inherited bypass)};
+  \node[xcut, minimum width=2.3cm, right=of p3] (p4) {\textbf{Pass 4}\\\textbf{RE-TAG}\\\tiny if catalog bumped\\\tiny re-classify orphans};
+  \node[dst, minimum width=2.3cm, below=0.7cm of p3] (cfg) {\textbf{theme\_config}\\\tiny \texttt{histo\_v1}};
+  \draw[arr] (prior) -| ($(p1.west)+(-0.25,0)$) -- (p1.west);
+  \draw[arr] (sops) -| ($(p1.west)+(-0.25,0)$);
+  \draw[arr] (p1) -- node[lab, above]{residual} (p2);
+  \draw[arr] (p2) -- (p3);
+  \draw[arrdash] (p3) -- node[lab, above, font=\tiny]{cond.} (p4);
+  \draw[arr] (p3) -- (cfg);
+\end{tikzpicture}
+\caption{Theme Discovery --- four passes, pre-flight per discipline. Pass 4 fires only when SME ratification changes the catalog (novel ratified or theme discarded).}
+\end{figure}
+
+\textbf{Algorithm in pseudocode:}
+
+\noindent\texttt{\scriptsize PASS 1 (CLASSIFY): for each chunk: score = best\_match(chunk, prior); if score $\geq\tau_{\text{match}}$ assign else residual\\
+PASS 2 (CLUSTER): cluster residuals (HDBSCAN); each cluster of size $\geq\varepsilon_{\text{novelty}}$ $\rightarrow$ candidate\_novel\_theme\\
+PASS 3 (SME GATE): SME confirms / renames / rejects each novel candidate; inherited themes pass automatically\\
+PASS 4 (RE-TAG, if catalog changed): re-classify previously-tagged corpus chunks against catalog\_v(N+1)}
+
+\textbf{Two knobs control the bias.} $\tau_{\text{match}}$ (default $0.65$): higher $\Rightarrow$ eager-to-inherit (small residual; risk forced fits). $\varepsilon_{\text{novelty}}$ (default $3$): higher $\Rightarrow$ stricter evidence bar before admitting novelty. The user's stated motive --- ``don't just end up with entirely new ones'' --- corresponds to a high $\tau_{\text{match}}$ and a non-trivial $\varepsilon_{\text{novelty}}$.
+
+\textbf{Worked example --- bootstrapping Histology from \texttt{cyto\_v1}.} Pass 1 classifies $460/600$ chunks into G1--G8 (residual $= 140$, including 12 chunks that fit G7 above $\tau_{\text{match}}$). Pass 2 finds 4 clusters above $\varepsilon_{\text{novelty}}$: H1 Tissue Processing (38), H2 Staining (32), H3 Block Archive (25), H4 Frozen Section (23); 22 chunks $\rightarrow$ G0 (3.7\%, below alarm). Pass 3: SME confirms all 4 novel themes; flags G7 as redundant in histo (instrument concerns fold into H1) --- discarded. Pass 4 re-classifies the 12 G7-orphaned chunks against the post-discard taxonomy (most land in H1, consistent with the ANALOGY map's \texttt{G7$\rightarrow$H1, partial} link). Final \texttt{histo\_v1}: 11 active themes (7 inherited + 4 novel; G7 recorded in ANALOGY map only). Reuse rate: 7/11 $\approx$ 64\%; 7/8 of the prior themes (87.5\%) survived.
+
+% =====================================================================
+\section{v3.2 Conditioned Epic Extractor --- match before generate}
+% =====================================================================
+
+In v3.1 the Epic Extractor proposed Micro epics from-scratch and optionally annotated \texttt{cyto\_epic\_analog} post-hoc when retrieval signal happened to align. In v3.2 the order is reversed: drafts are classified against the prior epic catalog \emph{first}; matched drafts inherit the analog by construction; only residuals get clustered for novelty.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm]
+  \node[src, minimum width=2.0cm] (sops) {\textbf{SOP cohort}};
+  \node[ai, minimum width=2.0cm, right=of sops] (drafts) {\textbf{1. Draft}\\\textbf{epics}\\\tiny per SOP};
+  \node[ai, minimum width=2.0cm, right=of drafts] (cls) {\textbf{2. Classify}\\\textbf{vs prior}\\\tiny \texttt{cyto\_epic\_v1}};
+  \node[decision, fill=cmpfill, draw=cmpdraw, right=of cls] (dec) {match?};
+  \node[ai, minimum width=2.4cm, above right=0.4cm and 0.6cm of dec] (link) {\textbf{3a. Link \& reuse}\\\tiny populate \texttt{epic\_analog}\\\tiny by construction};
+  \node[ai, minimum width=2.4cm, below right=0.4cm and 0.6cm of dec] (clust) {\textbf{3b. Cluster residual}\\\tiny across SOPs\\\tiny size $\geq \varepsilon_{\text{novelty}}$};
+  \node[val, minimum width=2.0cm, right=0.6cm of clust] (sme) {\textbf{4. SME}\\\textbf{ratify novel}};
+  \node[dst, minimum width=2.3cm, right=0.6cm of link] (cat) {\textbf{5. Epic catalog}\\\tiny \texttt{micro\_epic\_v1}};
+  \draw[arr] (sops) -- (drafts);
+  \draw[arr] (drafts) -- (cls);
+  \draw[arr] (cls) -- (dec);
+  \draw[arr] (dec) -- node[lab, sloped, above]{yes} (link);
+  \draw[arr] (dec) -- node[lab, sloped, above]{no} (clust);
+  \draw[arr] (clust) -- (sme);
+  \draw[arrdash] (link) -- node[lab, above, font=\tiny]{bypass review} (cat);
+  \draw[arr] (sme) -| (cat);
+\end{tikzpicture}
+\caption{Conditioned Epic Extractor --- the ``match?'' decision is algorithmic (not SME-gated; hence neutral coloring). Only the novel branch goes through SME ratification.}
+\end{figure}
+
+\textbf{Result for the Micro POC:} most Micro epics inherit Cyto's structure with explicit \texttt{epic\_analog} populated by construction; only genuinely novel epics --- e.g.\ Antibiotic Susceptibility Testing (AST), if it has no Cyto analog --- emerge with cluster evidence. The dev team reads \texttt{micro\_epic\_v1} and immediately sees what's reused vs.\ new without having to do the mapping themselves.
+
+
 
 A \textbf{shape} is the categorization the Story Extractor assigns to each Story. It tells the Validator which sub-rubric to apply, and tells downstream consumers (devs, the YAML emitter) how to interpret the AC. Per-SOP extraction picks one of four shapes per element. Cross-SOP synthesis only ever emits the \texttt{capability} shape.
 
@@ -193,11 +274,13 @@ cleanup & Modify or remove an existing artifact. \emph{No new feature.} & Target
 
 \textbf{Note on IDs:} draft IDs (e.g.\ \texttt{epic\_draft\_3}, \texttt{story\_draft\_42}) are used in-pipeline; the Dependency Resolver replaces them with final Jira-shaped IDs (e.g.\ \texttt{EPIC-MICRO-001}, \texttt{STORY-MICRO-1042}) at Jira-push time.
 
-\subsection{Epic schema}
+\subsection{Epic schema (v3.2)}
 
 \noindent\texttt{\scriptsize \{ id: "EPIC-MICRO-001", title: "Microbiology Specimen Receipt",\\
 \hspace*{1em}description: "...", discipline: "microbiology",\\
-\hspace*{1em}themes: ["G1","G5"], cyto\_epic\_analog: "EPIC-CYTO-007" \}}
+\hspace*{1em}themes: ["G1","G5"], theme\_catalog\_version: "cyto\_v1",\\
+\hspace*{1em}epic\_analog: \{ catalog\_id: "cyto\_epic\_v1", epic\_id: "EPIC-CYTO-007", equivalence: "identical" \},\\
+\hspace*{1em}inheritance\_basis: \{ match\_score: 0.78, shared\_themes: ["G1"], auto\_inherited: true \} \}}
 
 \begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.2cm}p{2.0cm}p{1.4cm}X@{}}
 \toprule
@@ -207,8 +290,10 @@ id & string & yes & Jira-shaped Epic ID. \\
 title & string & yes & Short capability-domain name. \\
 description & string & yes & 1--3 sentence scope statement. \\
 discipline & enum & yes & \texttt{microbiology} $|$ \texttt{histology} $|$ \texttt{cytology}. \\
-themes[] & array $\langle$G1..G8$\rangle$ & yes & Multi-label; an Epic can span themes. \\
-cyto\_epic\_analog & string & no & Cyto Epic ID this Epic is structurally analogous to (D13). \\
+themes[] & array & yes & Multi-label tags; values drawn from the theme catalog named by \texttt{theme\_catalog\_version}. \\
+theme\_catalog\_version & string & yes & \emph{(v3.2)} The theme catalog these tags resolve in --- e.g.\ \texttt{cyto\_v1} for Micro POC, \texttt{histo\_v1} for Histology. \\
+epic\_analog & object & no & \emph{(v3.2 --- replaces \texttt{cyto\_epic\_analog})} Cross-catalog link: \texttt{\{catalog\_id, epic\_id, equivalence\}}. Populated by the conditioned Epic Extractor when \texttt{match\_score $\geq \tau_{\text{match}}$}. \\
+inheritance\_basis & object & no & \emph{(v3.2)} Provenance for inherited epics: \texttt{\{match\_score, shared\_themes[], auto\_inherited\}}. Absent for novel epics; those carry \texttt{novelty\_basis} instead. \\
 \bottomrule
 \end{tabularx}
 
@@ -277,6 +362,79 @@ failed\_checks[] & array $\langle$\{rule, severity, message\}$\rangle$ & Empty w
 attempt & integer & 1 or 2 (after 2, verdict becomes \texttt{escalate}).\\
 \bottomrule
 \end{tabularx}
+
+\subsection{Theme catalog schema (v3.2)}
+
+\noindent\texttt{\scriptsize catalog\_id: histo\_v1\\
+parent\_catalog: cyto\_v1\\
+discipline: histology\\
+inherited\_themes:\\
+\hspace*{1em}- \{ id: G1, name: Pre-Analytic, source: cyto\_v1, match\_count: 142 \}\\
+\hspace*{1em}\ldots\\
+novel\_themes:\\
+\hspace*{1em}- \{ id: H1, name: Tissue Processing, source: histo\_v1,\\
+\hspace*{2em}cluster\_evidence: \{n\_chunks: 38, sample\_excerpts: [\ldots]\}, sme\_confirmed: true \}\\
+discarded\_themes:\\
+\hspace*{1em}- \{ id: G7, reason: "Folded into H1 (partial)", chunks\_re\_tagged: 12 \}\\
+unclassified\_bucket: \{ count: 22, pct\_of\_total: 3.7 \}}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.4cm}p{1.8cm}p{1.4cm}X@{}}
+\toprule
+\textbf{field} & \textbf{type} & \textbf{req'd} & \textbf{notes} \\
+\midrule
+catalog\_id & string & yes & \texttt{<discipline>\_v<N>}. Stories reference this in \texttt{theme\_catalog\_version}. \\
+parent\_catalog & string\,$|$\,null & yes & The prior the discovery was conditioned on. \texttt{null} only for the very first ever (\texttt{cyto\_v1}). \\
+inherited\_themes[] & array & yes & Themes that survived from \texttt{parent\_catalog} after Pass 1. Each has \texttt{source: <parent>} and a \texttt{match\_count}. \\
+novel\_themes[] & array & yes & SME-ratified novelties from Pass 2. Each carries \texttt{cluster\_evidence}. May be empty. \\
+discarded\_themes[] & array & opt & Parent themes the SME dropped. \texttt{chunks\_re\_tagged} records the Pass 4 fixup count. \\
+unclassified\_bucket & object & yes & G0 stats: \texttt{\{count, pct\_of\_total, sample\_excerpts, next\_review\_due\}}. Always present. 5\% alarm threshold. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Epic catalog schema (v3.2)}
+
+\noindent\texttt{\scriptsize catalog\_id: micro\_epic\_v1\\
+parent\_catalog: cyto\_epic\_v1\\
+discipline: microbiology\\
+inherited\_epics:\\
+\hspace*{1em}- \{ id: EPIC-MICRO-001, title: Specimen Receiving,\\
+\hspace*{2em}epic\_analog: \{catalog\_id: cyto\_epic\_v1, epic\_id: EPIC-CYTO-014, equivalence: identical\},\\
+\hspace*{2em}inheritance\_basis: \{match\_score: 0.78, shared\_themes: [G1], auto\_inherited: true\} \}\\
+novel\_epics:\\
+\hspace*{1em}- \{ id: EPIC-MICRO-007, title: AST,\\
+\hspace*{2em}epic\_analog: null,\\
+\hspace*{2em}novelty\_basis: \{n\_draft\_epics: 4, sme\_confirmed: true\} \}\\
+unclassified\_drafts: \{ count: 3, pct\_of\_total: 4.1 \}}
+
+The epic catalog versions independently from the theme catalog and uses the suffix \texttt{\_epic\_} to make the naming distinction explicit. The \texttt{epic\_analog} field, when populated, carries a struct (not a bare string) so the catalog the analog points into is unambiguous.
+
+\subsection{ANALOGY map schema (v3.2)}
+
+\noindent\texttt{\scriptsize source\_catalog: cyto\_v1\\
+target\_catalog: histo\_v1\\
+\\
+theme\_links:\\
+\hspace*{1em}- \{ source: G1, target: G1, equivalence: identical \}\\
+\hspace*{1em}- \{ source: G7, target: H1, equivalence: partial,\\
+\hspace*{2em}note: "G7 has no top-level peer in histo\_v1 (discarded); concept partially absorbed by H1 for slide-prep instruments." \}\\
+\hspace*{1em}- \{ source: null, target: H2, equivalence: novel\_in\_target \}\\
+\hspace*{1em}\ldots (H3, H4)\\
+\\
+epic\_links:\\
+\hspace*{1em}- \{ source: EPIC-CYTO-014, target: EPIC-HISTO-002, equivalence: identical \}}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{2.5cm}X@{}}
+\toprule
+\textbf{equivalence} & \textbf{meaning} \\
+\midrule
+identical & Full equivalence; \texttt{match\_score} above $\tau_{\text{match}}$, SME-confirmed by spot-check. \\
+partial & Loose mapping or scope difference; SME-confirmed each individually. Carries a \texttt{note}. \\
+discarded\_in\_target & Source has no top-level peer in target. \\
+novel\_in\_target & Target has no source ancestor (encoded as \texttt{source: null}). \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Convention.} Each source theme appears at most once as \texttt{source}. ``Discarded with partial mapping'' is a single \texttt{partial} entry whose note explains the discard --- \emph{not} two contradictory entries (\texttt{partial} plus \texttt{discarded\_in\_target}). Similarly, a target theme covered by a \texttt{partial} link does not also need a separate \texttt{novel\_in\_target} entry; the partial link already records its origin.
 
 % =====================================================================
 \section{Story relationships (graph view)}
@@ -396,6 +554,66 @@ retrieval\_analogy & Cyto chunks $\rightarrow$ chat prompt & Per-query, real-tim
 \end{tabularx}
 
 The same Cyto material thus serves three roles: a curated few-shot teaching set, an indexed corpus for live retrieval, and a structural reference at the Epic level.
+
+% =====================================================================
+\section{v3.2 ANALOGY map (graph view) --- explicit cross-discipline links}
+% =====================================================================
+
+When a discipline's theme catalog diverges from its parent (Histology drops G7, adds H1--H4), the ANALOGY map records the cross-catalog correspondences explicitly. Each link is typed --- the legend shows what each line style means.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.18cm and 1.8cm,
+    tnode/.style={rectangle, rounded corners=2pt, draw=outdraw, fill=outfill, line width=0.4pt, align=center, font=\scriptsize, inner sep=3pt, minimum width=2.7cm, minimum height=0.65cm},
+    tdiscard/.style={tnode, draw=red!60, fill=red!5, dashed, text=red!70},
+    tnovel/.style={tnode, draw=aidraw, fill=aifill, font=\scriptsize\bfseries}]
+
+  \node[font=\bfseries\small] (chc) at (0,0) {cyto\_v1};
+  \node[font=\bfseries\small] (hhd) at (5.5,0) {histo\_v1};
+
+  \node[tnode, below=0.3cm of chc] (cg1) {G1 Pre-Analytic};
+  \node[tnode, below=of cg1] (cg2) {G2 Analytic};
+  \node[tnode, below=of cg2] (cg3) {G3 Post-Analytic};
+  \node[tnode, below=of cg3] (cg4) {G4 Reporting};
+  \node[tnode, below=of cg4] (cg5) {G5 QC};
+  \node[tnode, below=of cg5] (cg6) {G6 Compliance};
+  \node[tdiscard, below=of cg6] (cg7) {G7 Instrumentation};
+  \node[tnode, below=of cg7] (cg8) {G8 Platform};
+
+  \node[tnode] (hg1) at (5.5, |-cg1) {G1 Pre-Analytic};
+  \node[tnode, below=of hg1] (hg2) {G2 Analytic};
+  \node[tnode, below=of hg2] (hg3) {G3 Post-Analytic};
+  \node[tnode, below=of hg3] (hg4) {G4 Reporting};
+  \node[tnode, below=of hg4] (hg5) {G5 QC};
+  \node[tnode, below=of hg5] (hg6) {G6 Compliance};
+  \node[tnode, below=of hg6] (hg8) {G8 Platform};
+  \node[tnovel, below=of hg8] (hh1) {$\star$ H1 Tissue Processing};
+  \node[tnovel, below=of hh1] (hh2) {$\star$ H2 Staining};
+  \node[tnovel, below=of hh2] (hh3) {$\star$ H3 Block Archive};
+  \node[tnovel, below=of hh3] (hh4) {$\star$ H4 Frozen Section};
+
+  \draw[outdraw, line width=1pt] (cg1.east) -- (hg1.west);
+  \draw[outdraw, line width=1pt] (cg2.east) -- (hg2.west);
+  \draw[outdraw, line width=1pt] (cg3.east) -- (hg3.west);
+  \draw[outdraw, line width=1pt] (cg4.east) -- (hg4.west);
+  \draw[outdraw, line width=1pt] (cg5.east) -- (hg5.west);
+  \draw[outdraw, line width=1pt] (cg6.east) -- (hg6.west);
+  \draw[xdraw, line width=1pt, dashed, ->, >={Stealth[length=4pt]}] (cg7.east) to[out=0,in=180] node[lab, sloped, above, font=\tiny]{partial} (hh1.west);
+  \draw[outdraw, line width=1pt] (cg8.east) -- (hg8.west);
+
+  % legend
+  \node[anchor=north west, font=\tiny, align=left, draw=cmpdraw, fill=notefill, line width=0.3pt, inner sep=4pt] (leg) at (8.3, |-cg1) {%
+    \textbf{LEGEND}\\[2pt]
+    {\color{outdraw}\rule[0.4ex]{1.2em}{1.0pt}}\, identical\\[1pt]
+    {\color{xdraw}- - -}\, partial\\[1pt]
+    {\color{red!70}\sffamily\textsf{[dashed]}}\, discarded\\[1pt]
+    {\color{aidraw}$\star$}\, novel in target\\[3pt]
+    Each cyto theme appears\\ at most once as source.\\ G7 maps partially to H1\\ \emph{and} is discarded;\\ encoded as one link.};
+\end{tikzpicture}
+\caption{ANALOGY map (cyto\_v1 $\leftrightarrow$ histo\_v1). 6 identical theme links, 1 partial (G7$\rightarrow$H1), 4 novel-in-target (H1--H4). H1 has no separate \texttt{novel\_in\_target} edge because the partial G7$\rightarrow$H1 link already records its origin.}
+\end{figure}
+
+The ANALOGY map drives the ANALOGY retrieval slot for cross-discipline queries: when a Histo question wants Cyto context, the map filters Cyto chunks down to themes that have a target-side correspondent.
 
 % =====================================================================
 \section{Ingestion substrate --- S3 to indexed chunks}
@@ -628,6 +846,6 @@ A literal constant in the rejection logic & Profile, with the Story's AC pointin
 
 KMS encryption at rest and in transit; IAM least-privilege with VPC endpoints (Bedrock calls stay in-VPC); DLQ for parse / OCR / embed failures; CloudWatch metrics and alarms (e.g.\ OCR fail-rate $> 5\%$); CloudTrail audit log on every API call; idempotent ingestion via content-hash dedupe.
 
-\textbf{Generalization:} when Histology arrives, the same agents and the same retrieval substrate run --- only the exemplar corpus and config priors get extended. No model retraining.
+\textbf{Generalization (v3.2):} when Histology arrives, Theme Discovery runs once as pre-flight to warm-start \texttt{histo\_v1} from \texttt{cyto\_v1} (most themes inherited; novel ones SME-ratified). The main pipeline then runs unchanged in shape, with the Epic Extractor in conditioned mode bootstrapping \texttt{histo\_epic\_v1} from \texttt{cyto\_epic\_v1}. No model retraining at any stage.
 
 \end{document}

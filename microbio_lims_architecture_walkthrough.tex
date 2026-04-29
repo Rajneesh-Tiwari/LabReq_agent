@@ -1,5 +1,7 @@
 \documentclass[10.5pt,letterpaper]{article}
 
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage[margin=0.75in]{geometry}
 \usepackage{parskip}
 \usepackage{enumitem}
@@ -19,15 +21,15 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{\small Microbiology LIMS POC --- v3.1}
+\rhead{\small Microbiology LIMS POC --- v3.2}
 \lhead{\small Process Reference}
-\rfoot{\small \thepage\ of 2}
+\rfoot{\small \thepage}
 
 \begin{document}
 
 \begin{center}
 {\Large\bfseries Microbiology LIMS POC --- Process at a Glance}\\[2pt]
-{\small Single-page reference to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
+{\small v3.2 (Conditioned Discovery) \quad\textbar\quad Reference to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
 \end{center}
 
 \section{What the system does}
@@ -39,7 +41,7 @@ The existing Cytology Jira backlog is used as a \textbf{teaching corpus} --- exa
 \section{The pipeline --- 5 agents, run as a single batch over the SOP cohort}
 
 \begin{enumerate}
-  \item \textbf{Epic Extractor} reads the cohort and identifies capability domains. \emph{Out:} \texttt{\{id, title, discipline, themes[], cyto\_epic\_analog?\}}. Example title: \emph{Microbiology Specimen Receipt}.
+  \item \textbf{Epic Extractor} reads the cohort and identifies capability domains, running in v3.2 \emph{conditioned mode} (matches drafts against the prior epic catalog before clustering anything novel; see \S v3.2 below). \emph{Out:} \texttt{\{id, title, discipline, themes[], theme\_catalog\_version, epic\_analog?\}}. Example title: \emph{Microbiology Specimen Receipt}.
   \item \textbf{Story Extractor} reads each SOP and emits Stories. Each Story declares one of \textbf{four shapes}, because real SOPs produce a mix --- a single rubric over-fits:
     \begin{itemize}
       \item \textbf{Capability} (a configurable feature; uses MUST/SHALL) --- e.g.\ \emph{Specimen Rejection Rules Engine}.
@@ -107,8 +109,24 @@ Two thresholds gate the chat to prevent hallucination:
 \hspace*{1em}temp:     \{value: 4,\ \ \ units: degC\} \# cite: SOP-MICRO-014 \S 3.2 L45\\
 related\_story\_ac: STORY-1042\#AC-2}
 
+\section{v3.2 --- Conditioned Discovery (warm-start theme \& epic bootstrap)}
+
+v3.1 generated epics from-scratch and treated themes G1--G8 as a closed Cyto-derived vocabulary. v3.2 adds a \emph{warm-start} step at both levels.
+
+\textbf{(1) Theme Discovery agent (new, pre-flight).} Runs once per discipline (or when the G0 alarm trips). Four passes: \textbf{Classify} chunks against the prior catalog at $\tau_{\text{match}}$ ($0.65$) $\rightarrow$ \textbf{Cluster} only the residuals (size $\geq \varepsilon_{\text{novelty}}=3$) $\rightarrow$ SME \textbf{ratifies} novel candidates (inherited bypass) $\rightarrow$ \textbf{Re-tag} the corpus on catalog version bump. Emits \texttt{<discipline>\_v<N>}.
+
+\textbf{(2) Epic Extractor in conditioned mode.} For each draft epic: classify against the prior epic catalog (\texttt{cyto\_epic\_v1}); if score $\geq \tau_{\text{match}}$, link \texttt{epic\_analog} and reuse the existing epic ID by construction; otherwise the residual is clustered across SOPs and SME ratifies novel ones. Emits \texttt{<discipline>\_epic\_v<N>}.
+
+\textbf{Result.} Most themes and epics inherit their structure with explicit lineage; only genuinely-novel structure (with cluster evidence) goes to SME. The dev team reads the output and immediately sees what's reused vs.\ new.
+
+\textbf{Worked example --- bootstrapping Histology from \texttt{cyto\_v1}:} 460/600 chunks classify into G1--G8 (residual $= 140$). Pass 2 surfaces 4 novel themes (H1 Tissue Processing, H2 Staining, H3 Block Archive, H4 Frozen Section); 22 chunks $\rightarrow$ G0 (3.7\%, below alarm). Pass 3 SME confirms all 4; flags G7 as redundant in histo (folded into H1) --- discarded. Pass 4 re-classifies the 12 G7-orphaned chunks (most land in H1). Final \texttt{histo\_v1}: 11 active themes (7 inherited + 4 novel; G7 in ANALOGY map only). 7/8 of the prior themes survived.
+
+\textbf{ANALOGY map artifact (new).} Explicit cross-catalog link table replacing v3.1's implicit shared-theme assumption. Each link typed: \texttt{identical} / \texttt{partial} / \texttt{discarded\_in\_target} / \texttt{novel\_in\_target}. Drives the ANALOGY retrieval slot at query time.
+
+\textbf{Micro POC migration.} Snapshot Cyto's themes as \texttt{cyto\_v1} and Cyto's epic backlog as \texttt{cyto\_epic\_v1}. Run conditioned Epic Extractor over the 3 in-scope SOPs to produce \texttt{micro\_epic\_v1} (most epics inherit; AST is the likely novel). Stories carry \texttt{theme\_catalog\_version: cyto\_v1} (Micro reuses the Cyto theme catalog wholesale; only the epic catalog forks). Emit a \texttt{cyto\_epic\_v1 $\leftrightarrow$ micro\_epic\_v1} ANALOGY map alongside.
+
 \section{Cross-cutting (one line)}
 
-KMS encryption at rest \& in transit; IAM least-privilege with VPC endpoints; DLQ for parse / OCR / embed failures; CloudWatch metrics + alarms; CloudTrail audit log on every API call. \emph{Generalization:} when Histology arrives, the same pipeline runs --- only the exemplar corpus and config priors get extended.
+KMS encryption at rest \& in transit; IAM least-privilege with VPC endpoints; DLQ for parse / OCR / embed failures; CloudWatch metrics + alarms; CloudTrail audit log on every API call. \emph{Generalization (v3.2):} when Histology arrives, Theme Discovery warm-starts \texttt{histo\_v1} from \texttt{cyto\_v1} pre-flight; the main pipeline then runs unchanged in shape.
 
 \end{document}
