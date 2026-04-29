@@ -974,6 +974,115 @@ existing Stories so that `theme_catalog_version` references stay
 resolvable. They live in source control alongside the SOPs they were
 derived from.
 
+# Open questions --- what's still TBD before this can ship
+
+The architecture above is the agreed shape; the items below are
+deliberately unresolved and need to be settled (or telemetry-calibrated)
+before code lands. They are listed here so the team sees the gaps in
+the same artifact rather than discovering them mid-implementation.
+
+## Conditioned-discovery calibration (needs telemetry from the first run)
+
+  -----------------------------------------------------------------------------
+  Question                            Default / lean             Decide by
+  ----------------------------------- -------------------------- --------------
+  `τ_match` default for theme         `0.65` --- a guess.        End of first
+  classification (Pass 1)             Tune from telemetry on     Micro
+                                      the first conditioned run. epic-discovery
+                                                                 run.
+
+  `ε_novelty` default for cluster     `3` --- a guess. Higher    Same.
+  qualification (Pass 2)              ⇒ stricter evidence; risk
+                                      of hiding real novelty.
+
+  Pass-1 scoring backend              Hybrid: cosine pre-filter  Validate (c)
+                                      + LLM tiebreaker. (a)      on first run;
+                                      cosine alone is fast       consider (a)
+                                      but coarse; (b) LLM-only   if hybrid
+                                      is most semantic but       latency too
+                                      expensive.                 high.
+
+  G0 / E0 alarm rolling window        Not yet specified. Need a  Set in
+                                      window length (e.g. 30     operational
+                                      days) and minimum sample   config; not
+                                      size before the alarm      in code yet.
+                                      can fire.
+  -----------------------------------------------------------------------------
+
+## Operational decisions before deployment
+
+-   **SME ratification UX.** The novel-candidate review (Pass 3) is
+    the most SME-burden-heavy part of the system. Open: is this a Jira
+    ticket per candidate, a single review document with all
+    candidates, or a dedicated lightweight UI? *Lean for POC:* a
+    review document plus a Jira ticket per ratified addition. Revisit
+    if SME finds it heavy.
+-   **Re-tagging policy on catalog version bump.** When a new theme
+    catalog version supersedes the old, what happens to Stories
+    already in Jira? Three options: (a) regenerate the Stories with
+    the new `theme_catalog_version`, (b) only update the `themes[]`
+    field on existing Stories in place, (c) leave old Stories alone
+    and only tag new ones with the new version. *Lean for POC:* (b)
+    --- preserves story identity, just refreshes the resolution.
+-   **Cross-version querying behavior.** When two disciplines have
+    different live theme catalogs (e.g. Micro on `cyto_v1` and
+    Histology on `histo_v1`) and a query crosses both, does the
+    retriever fan out across both catalogs and reconcile via the
+    ANALOGY map, or does it pick one as primary? *Lean:*
+    primary-with-ANALOGY-fanout. Specify before any second discipline
+    boots.
+
+## Implementation choices for the dev team
+
+-   **Jira integration mechanism.** Manual CSV upload, REST API push,
+    or webhook? Affects how Output A is delivered.
+-   **Per-culture profile granularity.** A single SOP may describe
+    multiple specimen variants (e.g. voided / catheter / midstream
+    urine). One profile per variant, or one profile with sub-keys?
+    Affects YAML schema and the related-Story back-references.
+-   **Story-shape classifier training.** The Validator routes by shape
+    (the Story Extractor declares it; the Validator verifies). Does
+    the verification classifier need its own labeled training set, or
+    can it run zero-shot off the schema? *Lean:* zero-shot first;
+    label only the disagreements with SME on the first run.
+-   **4-shape escape hatch.** What happens when an SOP element doesn't
+    cleanly fit any of the four shapes (capability /
+    workflow-stage-split / configuration-instance / cleanup)?
+    Plausible misfits: regulatory-compliance, non-functional /
+    performance, external-integration. Currently no escape hatch ---
+    the Validator would force a misfit classification. *Lean:* wait
+    for evidence this is actually a problem before adding a 5th
+    shape.
+
+## Quality / governance
+
+-   **Validator rubric calibration.** The shape-specific sub-rubrics
+    need SME calibration on \~10 stories per shape (which checks are
+    too strict, which too lenient). Required before the rubric can be
+    treated as production-grade.
+-   **Cross-SOP recurrence threshold.** The synthesis pass currently
+    qualifies clusters with members from `≥ 2 distinct SOPs`. With
+    only 3 in-scope SOPs for the POC, this means *anything seen in 2
+    of 3* lifts. Is that too aggressive? Stricter alternative:
+    `≥ majority`. Revisit after the first run.
+-   **Eval framework.** How do we measure improvement? Per-shape
+    acceptance rate (% passing Validator without revision)?
+    End-to-end SME-acceptance rate? Per-discipline coverage? Need
+    agreement on the metrics before optimization decisions can be
+    made.
+
+## Stakeholder / SME inputs the dev team can't decide alone
+
+-   **PHI handling policy.** SOPs shouldn't contain PHI, but
+    transcripts might. Redact-and-index, restrict-route, or refuse?
+    Compliance call needed before ingestion goes near transcripts.
+-   **Sample artifact access.** Can sanitized Cytology Jira stories +
+    Cytology SOPs (1--2 examples) be brought out of the office network
+    for development? Blocks the first end-to-end test if not.
+-   **Cyto SME availability.** Exemplar curation requires SME pairing
+    on the first \~10 (SOP excerpt → Story) tuples. Estimated 1--2
+    days of focused SME time. Needs to be scheduled.
+
 # Cross-cutting
 
 KMS encryption at rest and in transit; IAM least-privilege with VPC
