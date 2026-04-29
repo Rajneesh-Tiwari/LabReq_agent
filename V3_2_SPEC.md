@@ -10,8 +10,8 @@
 
 v3.1 makes two implicit cold-start assumptions:
 
-1. **Themes G1–G8 are known.** The theme tagger, the eight centroid embeddings, the intent-decode classifier, the ADJACENT retrieval slot, and the Epic schema all bake in the Cyto-derived taxonomy as a closed enum. (See `project_theme_taxonomy_assumption.md`.)
-2. **Epics are generated freshly per SOP.** The Epic Extractor reads SOPs and proposes epics from scratch, with a `cyto_epic_analog` annotation slot (D13) that is populated *after* the fact when retrieval signal happens to align.
+1. **Themes G1–G8 are known.** The theme tagger, the eight centroid embeddings, the intent-decode classifier (closed enum by construction), and the ADJACENT retrieval slot all assume the G1–G8 vocabulary is fixed. The Epic schema's `themes[]` field is *soft* per D3, but its values are drawn from this same closed vocabulary — so a new discipline still has nowhere to put a tag that doesn't fit. (See `project_theme_taxonomy_assumption.md`.)
+2. **Epics are generated from-scratch per SOP.** The Epic Extractor reads SOPs and proposes epics directly, with a `cyto_epic_analog` annotation slot (D13) that is populated *after* the fact when retrieval signal happens to align — i.e., the analog is a post-hoc decoration, not a generation constraint.
 
 Both assumptions hold for a single-discipline POC where Cyto's taxonomy is the ground truth. They break the moment we extend:
 
@@ -41,11 +41,12 @@ Both use the same algorithmic pattern (§4). The schemas and SME gates differ sl
 
 ## 3. Glossary (delta vs v3.1)
 
-- **Conditioned discovery.** A two-pass procedure: (1) classify the input against an existing prior catalog using a confidence threshold; (2) cluster only the residual (low-confidence / unclassified) inputs to discover novel candidates. The novel candidates are SME-gated before being merged into the catalog.
+- **Conditioned discovery.** A four-pass procedure: (1) **Classify** the input against an existing prior catalog using a confidence threshold; (2) **Cluster** only the residual (low-confidence) inputs to surface novel candidates; (3) **SME ratifies** the novel candidates (inherited entries bypass review); (4) **Re-tag** the existing corpus when the catalog version bumps. The first two passes are the algorithmic core; the third is the gate; the fourth is a side effect.
 - **Prior catalog.** The set of themes (or epics) treated as the existing structure to reuse. For Micro POC, this is the Cyto theme set + Cyto epic set. For a future discipline, it is whichever taxonomy the SME decides to inherit from (could be Cyto's, or could be the most recent ratified Micro one).
 - **Residual.** Inputs (SOP chunks for theme discovery, SOP-level epic proposals for epic discovery) that fall below the prior-classification confidence threshold. The residual is the candidate pool for novel discovery.
 - **G0 / E0.** The "Unclassified" bucket promoted to first-class. Replaces the implicit fallback in v3.1. Has a configurable alarm threshold (default 5% of input volume) that triggers SME review and possibly a re-run of conditioned discovery.
-- **Taxonomy version.** Theme catalogs and epic catalogs are now versioned (`cyto_v1`, `micro_v1`, `histo_v1`). Stories and Epics carry the version they were tagged against. A re-tagging script handles version bumps.
+- **Catalog naming.** Theme catalogs are named `<discipline>_v<N>` (e.g., `cyto_v1`, `histo_v1`). Epic catalogs are named `<discipline>_epic_v<N>` (e.g., `cyto_epic_v1`, `micro_epic_v1`) — they are *separate* artifacts from theme catalogs and version independently. A discipline may share its theme catalog with a parent (Micro reuses `cyto_v1` for themes; see §9) while having its own epic catalog.
+- **Taxonomy version.** Stories and Epics carry an explicit `theme_catalog_version` field referencing which theme catalog their `themes[]` resolve in. Epics belong to an epic catalog by file membership (no separate version field needed). A re-tagging script handles version bumps.
 - **ANALOGY map.** An explicit table linking themes/epics across disciplines (e.g., `cyto.G7 ↔ histo.H1, equivalence: partial`). Replaces v3.1's implicit assumption of a shared theme space.
 
 Terms unchanged from v3.1 (shape, theme, intent, τ/θ, batch wait, etc.) are defined in `microbio_lims_architecture_walkthrough.docx`.
@@ -87,7 +88,9 @@ PASS 3 — SME RATIFICATION (gate):
 
 PASS 4 — RE-TAG (only when catalog version bumps):
   re-run the classifier over previously-tagged corpus chunks against catalog_v(N+1)
-  update Story.themes[] / Epic.themes[] / Epic.cyto_epic_analog accordingly
+  update Story.themes[] / Epic.themes[] / Epic.epic_analog accordingly
+  (any chunks previously assigned to a now-discarded theme get re-classified
+   against the post-discard taxonomy)
 ```
 
 Two knobs control the bias:
@@ -105,7 +108,7 @@ For the Micro POC with Cyto as prior, default both knobs to *bias toward reuse*.
 
 A pre-flight agent that runs **once per discipline**, not per SOP. Inputs: a sample of N representative SOPs (15–30) from the new discipline + the prior theme catalog (e.g., Cyto's G1–G8). Output: a versioned theme config and an SME report.
 
-**Pipeline placement:** before Epic Extractor. Output (the theme config) feeds the Theme Tagger, the centroid embedder, the intent-decode classifier, the ADJACENT slot, and the Epic schema's `themes[]` enum.
+**Pipeline placement:** *pre-flight* — Theme Discovery is not part of the live per-SOP main pipeline. It runs once before the main pipeline boots for the new discipline (and again only when the G0 alarm trips). Its published theme config feeds the Theme Tagger, the centroid embedder, the intent-decode classifier, the ADJACENT slot, and the Epic schema's `themes[]` vocabulary at runtime.
 
 **When does it run?**
 - Once when bootstrapping a new discipline.
@@ -157,8 +160,9 @@ novel_themes:
 
 discarded_themes:
   - id: G7  # Instrumentation
-    reason: "Folded into H1 (Tissue Processing) and G2 (Analytic) for histology — instrumentation is not a top-level cut here."
+    reason: "Folded into H1 (Tissue Processing) for histology — instrument concerns are not a top-level cut here. Recorded in the ANALOGY map as G7 → H1 (partial)."
     decision_by: <sme_name>
+    chunks_re_tagged: 12             # Pass 4 re-classified the 12 chunks Pass 1 had assigned to G7
 
 unclassified_bucket:
   count: 22
@@ -180,29 +184,32 @@ unclassified_bucket:
 
 ```yaml
 # epic_catalog schema
-catalog_id: micro_v1
-parent_catalog: cyto_v1
+catalog_id: micro_epic_v1
+parent_catalog: cyto_epic_v1            # the prior we inherited from
 discipline: microbiology
 created: 2026-XX-XX
 
 inherited_epics:
   - id: EPIC-MICRO-001
     title: Specimen Receiving
-    cyto_analog: EPIC-CYTO-014
+    epic_analog:
+      catalog_id: cyto_epic_v1
+      epic_id: EPIC-CYTO-014
+      equivalence: identical
     inheritance_basis:
       match_score: 0.78
       shared_themes: [G1]
-      sme_confirmed: true
+      auto_inherited: true              # match_score ≥ τ_match; bypassed SME review per §5.2
 
 novel_epics:
   - id: EPIC-MICRO-007
     title: Antibiotic Susceptibility Testing (AST)
-    cyto_analog: null
+    epic_analog: null                   # no Cyto correspondent
     novelty_basis:
       cluster_evidence:
-        n_draft_epics: 4            # from how many SOPs
+        n_draft_epics: 4                # how many SOPs contributed drafts to the cluster
         sample_drafts: [<draft_id_1>, ...]
-      sme_confirmed: true
+      sme_confirmed: true               # required for novel — SME-ratified at Pass 3
 
 unclassified_drafts:
   count: 3
@@ -214,19 +221,23 @@ unclassified_drafts:
 
 ```yaml
 # analogy_map schema
-source_catalog: cyto_v1
+source_catalog: cyto_v1                 # theme catalogs (epic-level links live below in epic_links)
 target_catalog: histo_v1
 
 theme_links:
-  - source: G1, target: G1, equivalence: identical
-  - source: G7, target: H1, equivalence: partial,
-    note: "Cyto Instrumentation maps loosely to Histo Tissue Processing for slide-prep instruments."
-  - source: G3, target: null, equivalence: discarded_in_target
+  - source: G1,   target: G1, equivalence: identical
+  - source: G7,   target: H1, equivalence: partial,
+    note: "Cyto Instrumentation has no top-level peer in histo_v1 (discarded as a theme); concepts partially absorbed by H1 Tissue Processing for slide-prep instruments."
   - source: null, target: H2, equivalence: novel_in_target
+  - source: null, target: H3, equivalence: novel_in_target
+  - source: null, target: H4, equivalence: novel_in_target
+
+# Each non-identical theme link carries a one-line note. Each cyto theme appears at most once
+# as a `source`; "discarded with partial mapping" is a single entry, not two.
 
 epic_links:
   - source: EPIC-CYTO-014, target: EPIC-HISTO-002, equivalence: identical
-  - source: EPIC-CYTO-022, target: null, equivalence: discarded_in_target
+  - source: EPIC-CYTO-022, target: null,           equivalence: discarded_in_target
 ```
 
 This drives the ANALOGY retrieval slot for cross-discipline queries: when the user asks Histo questions and the LLM wants Cyto context, the ANALOGY map filters Cyto chunks down to themes that actually have a target-side correspondent.
@@ -249,48 +260,46 @@ In v3.1, "unclassified" is implicit fallback behavior. In v3.2 it is a reviewabl
   id, title, description,
   discipline,
 - themes[],                       // soft theme tags (D3)
-+ themes[],                       // soft theme tags (D3); each tag references catalog_id
-+ catalog_version: string,        // e.g. "micro_v1" — which theme catalog these tags resolve in
++ themes[],                       // soft theme tags (D3); values drawn from theme_catalog_version below
++ theme_catalog_version: string,  // e.g. "cyto_v1" — which theme catalog these tags resolve in
+                                  // (the epic catalog version is implicit by file membership)
 - cyto_epic_analog?               // optional annotation, see D13
 + epic_analog?                    // optional cross-catalog link {catalog_id, epic_id, equivalence}
-+ inheritance_basis?              // populated by Epic Discovery: {score, shared_themes, sme_confirmed}
++ inheritance_basis?              // populated by Epic Discovery: {match_score, shared_themes, auto_inherited}
 }
 ```
 
-**Story schema:** add `catalog_version` to themes[] resolution. Stories don't change shape otherwise — `themes[]` is just now resolved against a versioned catalog rather than a closed enum.
+**Story schema:** add `theme_catalog_version` mirroring the Epic field. Stories don't change shape otherwise — `themes[]` is just now resolved against a versioned theme catalog rather than a closed enum.
 
 ---
 
 ## 6. Pipeline diagram (v3.2 delta)
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│  ONE-TIME PER DISCIPLINE (or on G0 alarm)                          │
-│                                                                    │
-│  Sample SOPs ──► Theme Discovery Agent ──► theme_config v(N)       │
-│       ▲              │                              │              │
-│       │              ▼                              ▼              │
-│  prior catalog    SME ratification gate      published config      │
-│  (e.g. cyto_v1)                                                    │
-└────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ONE-TIME PER DISCIPLINE (or when G0 alarm trips)                       │
+│                                                                         │
+│   Sample SOPs ──┐                                                       │
+│                 ├──► Theme Discovery Agent ──► SME ratify ──► theme     │
+│   prior catalog ┘                                              config   │
+│   (e.g. cyto_v1)                                              v(N+1)    │
+└─────────────────────────────────────────────────────────────────────────┘
                                     │
-                                    ▼  (catalog feeds the live pipeline)
-┌────────────────────────────────────────────────────────────────────┐
-│  PER SOP CORPUS (existing v3.1 pipeline, lightly modified)         │
-│                                                                    │
-│  SOPs ──► Epic Extractor (conditioned mode) ──► Epic candidates    │
-│              │                                          │          │
-│              ▼                                          ▼          │
-│         match against epic catalog          cluster residual       │
-│              │                                          │          │
-│              └─────────────┬────────────────────────────┘          │
-│                            ▼                                       │
-│                  SME ratification gate                             │
-│                            │                                       │
-│                            ▼                                       │
-│  Epic catalog v(N+1) ──► Story Extractor ──► Validator ──► …       │
-│                            (unchanged from v3.1 onwards)           │
-└────────────────────────────────────────────────────────────────────┘
+                                    ▼  (published config feeds the live pipeline)
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PER-SOP-CORPUS RUN (the v3.1 main pipeline, with Epic Extractor        │
+│   running in conditioned mode)                                          │
+│                                                                         │
+│   SOPs ──► Epic Extractor (conditioned mode) ──► draft epics            │
+│              │                                                          │
+│              ├── score ≥ τ_match ──► link epic_analog, reuse epic id ─┐ │
+│              │                                                        │ │
+│              └── score < τ_match ──► cluster residual ──► SME ratify ─┤ │
+│                                                                       ▼ │
+│                                       epic catalog v(N+1) ──► Story Extr│
+│                                                              ──► Validator
+│                                                              ──► … (unchg)
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 Two SME gates are added to v3.2: one at theme ratification (one-time per discipline), one at epic ratification (per SOP corpus run). Both surface the *novel* candidates with evidence — the SME is not asked to re-review the inherited ones.
@@ -339,22 +348,24 @@ SME reviews 4 novel candidates with evidence:
 - H3 confirmed.
 - H4 confirmed but flagged: "this might split into Frozen-Section and Routine-Archive depending on observed volume in production. Revisit at the 6-month G0 review."
 
-Discarded themes: SME notes G7 Instrumentation in Cyto is a top-level cut because Cyto has many instrument-specific stories. In Histo, instrument concerns fold into G2/H1/H2 — drop G7 from `histo_v1` and link it in the ANALOGY map as `partial → H1`.
+Discarded themes: SME notes G7 Instrumentation in Cyto is a top-level cut because Cyto has many instrument-specific stories. In Histo, instrument concerns fold into H1 (Tissue Processing) — drop G7 from `histo_v1` and link it in the ANALOGY map as `partial → H1`.
+
+**Pass 4 — re-tag the 12 G7 chunks:** because G7 was discarded, the 12 chunks Pass 1 had assigned to G7 no longer have a target. Pass 4 re-runs the classifier over those 12 chunks against the post-discard taxonomy (G1–G6, G8, H1–H4). They land predominantly in H1 (consistent with the ANALOGY map's `G7 → H1, partial` link); any that fall below τ_match against the new taxonomy go to G0. This is the general invariant: discarding a theme triggers re-classification of its chunks; nothing is left dangling.
 
 **Output: `histo_v1` theme config**
 
 ```yaml
 catalog_id: histo_v1
 parent_catalog: cyto_v1
-inherited_themes: [G1, G2, G3, G4, G5, G6, G8]    # 7 of 8
-novel_themes: [H1, H2, H3, H4]                     # 4 new
-discarded_themes: [G7]                             # 1 dropped, mapped via ANALOGY
+inherited_themes: [G1, G2, G3, G4, G5, G6, G8]    # 7 of the 8 prior themes carried over
+novel_themes:     [H1, H2, H3, H4]                # 4 new, SME-ratified
+discarded_themes: [G7]                            # mapped via ANALOGY, chunks re-tagged in Pass 4
 unclassified_bucket:
   count: 22
-  pct_of_total: 3.7                                # under 5% alarm
+  pct_of_total: 3.7                               # under 5% alarm
 ```
 
-**Net result:** Histo's taxonomy is **mostly inherited (7/12 = 58%)** with a clear novelty story for the rest. The dev team reading `histo_v1` immediately sees what carries over from Cyto and what's genuinely new about Histology — without having to do that mapping themselves.
+**Net result:** `histo_v1` has **11 active themes** (7 inherited + 4 novel; G7 discarded is recorded in the ANALOGY map but not in the active catalog). 7 of those 11 active themes (≈ 64%) come straight from Cyto, and 7 of the 8 prior themes (87.5%) survived the bootstrap. The dev team reading `histo_v1` immediately sees what carries over from Cyto and what's genuinely new about Histology — without having to do that mapping themselves.
 
 ---
 
@@ -382,7 +393,7 @@ These would be added to `DECISIONS.md` after spec review.
 
 ### D18 — Theme and epic catalogs are versioned config-as-data, not closed enums
 
-**Decision:** Both theme catalogs (`<discipline>_v<N>`) and epic catalogs are versioned YAML artifacts. Stories and Epics carry the `catalog_version` they were tagged against. A re-tagging script handles version bumps.
+**Decision:** Theme catalogs (`<discipline>_v<N>`, e.g. `cyto_v1`) and epic catalogs (`<discipline>_epic_v<N>`, e.g. `cyto_epic_v1`) are separate versioned YAML artifacts. Stories and Epics carry an explicit `theme_catalog_version` field for theme resolution; epic catalog membership is implicit by file. A re-tagging script handles version bumps.
 
 **Rationale:** v3.1 baked G1–G8 as a closed enum into the Epic schema, the theme tagger, and several other places. Treating the catalog as data instead of code means a new discipline doesn't require a code change to the agents; only a new catalog row. It also lets two disciplines coexist with different (linked-via-ANALOGY) taxonomies.
 
@@ -398,17 +409,17 @@ These would be added to `DECISIONS.md` after spec review.
 
 For the Micro POC currently in flight, v3.2 is *additive* — nothing v3.1 produces becomes invalid. Migration steps:
 
-1. **Snapshot Cyto's themes G1–G8 as `cyto_v1`** (the parent catalog every other catalog will derive from). Compute and store the eight centroid embeddings as `cyto_v1` artifacts.
-2. **Snapshot Cyto's existing epic backlog as `cyto_epic_v1`**. This becomes the prior for the conditioned Epic Extractor.
-3. **Run conditioned Epic Extractor over the 3 in-scope Micro SOPs** (blood culture, urine culture, target pathogens). Output: a `micro_v1` epic catalog with most epics linked to `cyto_epic_v1` analogs and possibly 1–2 novel Micro-only epics (likely AST).
-4. **Stories generated from those epics** carry `catalog_version: micro_v1` and resolve their themes against `cyto_v1` (since Micro inherits the theme catalog wholesale for the POC — Micro doesn't change the *theme* taxonomy, only the *epic* catalog).
-5. **Defer Theme Discovery Agent to v3.2-extension** (Histology bootstrap or similar). For the Micro POC, theme catalog stays `cyto_v1` because the assumption of theme-reuse holds within the same lab process family.
-6. **Add ANALOGY map artifacts as deliverables** alongside epics/stories — even for Micro, the cyto↔micro ANALOGY map is now explicit instead of implicit.
+1. **Snapshot Cyto's themes G1–G8 as `cyto_v1`** (the parent *theme* catalog every other theme catalog will derive from). Compute and store the eight centroid embeddings as `cyto_v1` artifacts.
+2. **Snapshot Cyto's existing epic backlog as `cyto_epic_v1`** (the parent *epic* catalog). This becomes the prior for the conditioned Epic Extractor. Note the deliberate naming split: `cyto_v1` (themes) vs `cyto_epic_v1` (epics) — they are separate artifacts that version independently.
+3. **Run conditioned Epic Extractor over the 3 in-scope Micro SOPs** (blood culture, urine culture, target pathogens). Output: a `micro_epic_v1` epic catalog with most epics linked to `cyto_epic_v1` analogs and possibly 1–2 novel Micro-only epics (likely AST).
+4. **Stories generated from those epics** carry `theme_catalog_version: cyto_v1` (since Micro reuses Cyto's theme catalog wholesale for the POC), and attach to epics in `micro_epic_v1` via `epic_id`. Micro does not get its own theme catalog yet — it changes the *epic* catalog only.
+5. **Defer Theme Discovery Agent to v3.2-extension** (Histology bootstrap or similar). For the Micro POC, the theme catalog stays `cyto_v1` because the assumption of theme-reuse holds within the same lab-process family.
+6. **Add ANALOGY map artifacts as deliverables** alongside epics/stories — even for Micro, the `cyto_epic_v1 ↔ micro_epic_v1` ANALOGY map is now explicit instead of implicit. (No theme-level ANALOGY map is needed for Micro since the source and target theme catalogs are the same.)
 
 This means the v3.2 Micro POC delivery looks like:
-- Same Stories + per-culture YAML profiles as v3.1.
-- *Plus* a `micro_v1` epic catalog with explicit `cyto_epic_v1` lineage.
-- *Plus* an explicit `cyto_v1 ↔ micro_v1` ANALOGY map.
+- Same Stories + per-culture YAML profiles as v3.1, now carrying `theme_catalog_version: cyto_v1`.
+- *Plus* a `micro_epic_v1` epic catalog with explicit `cyto_epic_v1` lineage on every inherited epic.
+- *Plus* an explicit `cyto_epic_v1 ↔ micro_epic_v1` ANALOGY map (epic_links only — theme_links empty since theme catalog is unchanged).
 
 Net additional work for the POC: small. Net additional value: the dev team and the architecture team can read the output and immediately see what's inherited from Cyto vs. what's novel about Micro.
 
@@ -421,8 +432,8 @@ These extend `OPEN_QUESTIONS.md`:
 - **τ_match and ε_novelty defaults.** Defaults of 0.65 / 3 are guesses. Need telemetry on the first real run (Micro epic discovery against Cyto's catalog) to calibrate. Too high τ_match → residual too small → novelty under-detected. Too low → residual too noisy → spurious novel clusters. Same logic for ε_novelty.
 - **Match scoring backend.** Pass 1 can be (a) cosine similarity on centroid embeddings, (b) LLM-as-classifier with prompt + prior catalog descriptions, or (c) hybrid (cosine pre-filter, LLM tiebreaker). (a) is fast/cheap; (b) is most semantic but expensive; (c) is the practical default. Validate (c) on the Micro epic-discovery run.
 - **SME ratification UX.** The novel-candidate review is the most SME-burden-heavy part of v3.2. Open: is this a Jira ticket per candidate, a single review document with all candidates, or a dedicated lightweight UI? Lean toward "review document + Jira ticket per ratified addition" for the POC; revisit if SME finds it heavy.
-- **Re-tagging on catalog version bump.** Implementation is simple in principle (re-run the classifier), but for a corpus that has already produced Stories in Jira, do we (a) regenerate the Stories with new `catalog_version`, (b) only update the `themes[]` field on existing Stories, or (c) leave old Stories alone and only tag new ones? Lean (b) for the POC — preserves story identity, updates the resolution.
-- **Cross-version querying.** When Micro is at `micro_v1` and Histo is at `histo_v1`, and a query crosses both, does the retriever fan out across both catalogs and reconcile via the ANALOGY map, or does it pick one as primary? Probably primary-with-ANALOGY-fanout, but specify before v3.2-extension lands.
+- **Re-tagging on catalog version bump.** Implementation is simple in principle (re-run the classifier), but for a corpus that has already produced Stories in Jira, do we (a) regenerate the Stories with the new `theme_catalog_version`, (b) only update the `themes[]` field on existing Stories (and bump `theme_catalog_version` in place), or (c) leave old Stories alone and only tag new ones? Lean (b) for the POC — preserves story identity, updates the resolution.
+- **Cross-version querying.** When two disciplines have different live theme catalogs (e.g., Micro on `cyto_v1` and Histo on `histo_v1`) and a query crosses both, does the retriever fan out across both catalogs and reconcile via the ANALOGY map, or does it pick one as primary? Probably primary-with-ANALOGY-fanout, but specify before v3.2-extension lands.
 - **What happens to v3.1 outputs already produced?** For the POC corpus already extracted under v3.1, do we re-run them through conditioned Epic Extractor to gain `epic_analog` populated by construction? Or grandfather them with `cyto_epic_analog` as best-effort post-hoc annotation? Lean re-run if cheap (the Epic Extractor is the cheap-ish part of the pipeline).
 
 ---
@@ -431,7 +442,7 @@ These extend `OPEN_QUESTIONS.md`:
 
 To keep the diff surface honest:
 
-- The 5-agent main pipeline (Epic Extractor → Story Extractor → Validator → Cross-SOP Synthesis → Validator → Dependency Resolver). Epic Extractor gains conditioned mode; everything else is unchanged.
+- The 5-agent main pipeline (Epic Extractor → Story Extractor → Validator → Cross-SOP Synthesis → Validator → Dependency Resolver) is unchanged in *shape*. Epic Extractor gains conditioned mode; the other four agents are untouched. Theme Discovery is a *new* sixth agent, but it is **pre-flight** (one-time-per-discipline) — it does not run on the per-SOP critical path.
 - The four story shapes (capability, workflow-stage-split, configuration-instance, cleanup) and the type-aware Validator rubrics.
 - Cross-SOP synthesis with the ≥2 distinct SOPs threshold.
 - Cyto's role as a teaching corpus (D5) and the three transfer mechanisms (`epic_analog`, `exemplar_of`, `retrieval_analogy`).
@@ -439,4 +450,4 @@ To keep the diff surface honest:
 - The per-culture YAML configuration profile (D12).
 - Tasks remaining out-of-scope (D14).
 
-The v3.2 changes are concentrated at the **boundary**: how the pipeline starts up (Theme Discovery), how Epic Extractor decides what's reused vs. novel, and how the catalogs are versioned. The interior of the pipeline is the same architecture v3.1 ratified.
+The v3.2 changes are concentrated at the **boundary**: how the pipeline starts up (the new pre-flight Theme Discovery agent), how Epic Extractor decides what's reused vs. novel (conditioned mode), and how the catalogs are versioned (config-as-data, ANALOGY map). The interior of the main pipeline is the same architecture v3.1 ratified.
