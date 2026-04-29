@@ -1,0 +1,114 @@
+\documentclass[10.5pt,letterpaper]{article}
+
+\usepackage[margin=0.75in]{geometry}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+
+\setlength{\parskip}{4pt}
+\setlist[itemize]{leftmargin=1.1em,topsep=1pt,itemsep=1pt,parsep=0pt}
+\setlist[enumerate]{leftmargin=1.3em,topsep=1pt,itemsep=1pt,parsep=0pt}
+
+\titleformat{\section}{\large\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{8pt}{2pt}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{4pt}{1pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Microbiology LIMS POC --- v3.1}
+\lhead{\small Process Reference}
+\rfoot{\small \thepage\ of 2}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Microbiology LIMS POC --- Process at a Glance}\\[2pt]
+{\small Single-page reference to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
+\end{center}
+
+\section{What the system does}
+
+A subject-matter expert (SME) drops microbiology SOPs into S3. An agent pipeline reads them and produces two things for the dev team: \textbf{(A)} Jira-ready \emph{Epics} and \emph{Stories}, and \textbf{(B)} a per-culture \emph{configuration profile} in YAML (one each for urine, blood, target-pathogen).
+
+The existing Cytology Jira backlog is used as a \textbf{teaching corpus} --- example (SOP excerpt $\rightarrow$ Story) pairs the agent learns the house style from. It is \emph{not} a registry to match against. The agent stops at Story. \emph{Tasks} (test IDs, library versions, DB columns) are dev-authored --- the agent has no codebase visibility to fabricate them defensibly.
+
+\section{The pipeline --- 5 agents, run as a single batch over the SOP cohort}
+
+\begin{enumerate}
+  \item \textbf{Epic Extractor} reads the cohort and identifies capability domains. \emph{Out:} \texttt{\{id, title, discipline, themes[], cyto\_epic\_analog?\}}. Example title: \emph{Microbiology Specimen Receipt}.
+  \item \textbf{Story Extractor} reads each SOP and emits Stories. Each Story declares one of \textbf{four shapes}, because real SOPs produce a mix --- a single rubric over-fits:
+    \begin{itemize}
+      \item \textbf{Capability} (a configurable feature; uses MUST/SHALL) --- e.g.\ \emph{Specimen Rejection Rules Engine}.
+      \item \textbf{Workflow-stage-split} (same capability, decomposed by stage; siblings cross-linked) --- e.g.\ \emph{PHI Update Before Work Has Started / After Work Has Started / After Results Reported}.
+      \item \textbf{Configuration-instance} (concrete values for one culture; this is data, not capability language) --- e.g.\ \emph{Urine centrifugation: speed 1500 g, duration 5 min, temp 4\,$^\circ$C}.
+      \item \textbf{Cleanup / correction} (modify or remove an existing artifact) --- e.g.\ \emph{Remove Result Bucket option from Add/Modify QT code screens}.
+    \end{itemize}
+  \item \textbf{Validator --- gate \#1} verifies the declared shape, then applies a \emph{shape-specific} rubric (capability requires MUST/SHALL + testable AC; config-instance requires concrete typed values + verbatim citation; cleanup requires named target + before/after + regression risk; stage-split requires stage in title + sibling enumeration). Two revision rounds; on exhaustion, escalate to SME with the failed checks visible.
+  \item \textbf{Cross-SOP Synthesis} runs only after gate \#1 has cleared the entire batch. It clusters concrete stories whose members come from \textbf{$\geq 2$ distinct SOPs} (two stories from the same SOP do \emph{not} qualify) and emits one capability-shaped story per cluster, with \texttt{cross\_links[]} pointing back at the contributing concrete stories. \textbf{Concrete stories are kept} --- the capability story is added as a sibling, not a replacement.
+  \item \textbf{Validator --- gate \#2} (same agent as gate \#1) re-validates the synthesized stories against the capability rubric --- they are a \emph{new} artifact, not a derivative of validated input.
+  \item \textbf{Dependency Resolver} --- final pass. Resolves story-to-story dependencies, stage-split sibling links, and capability-to-child links from synthesis. Outputs Jira-ready artifacts.
+\end{enumerate}
+
+\subsection{Story schema (what gets pushed to Jira)}
+
+\noindent\texttt{\small \{\\
+\hspace*{1em}id, epic\_id, title, description,\\
+\hspace*{1em}shape $\in$ \{capability, workflow-stage-split, configuration-instance, cleanup\},\\
+\hspace*{1em}acceptance\_criteria[\,], source\_citations[\,], dependencies[\,], cross\_links[\,],\\
+\hspace*{1em}estimated\_complexity $\in$ \{S, M, L\}, source\_chunks[\,]\\
+\}}
+
+\section{The substrate --- how the agents see source material}
+
+\textbf{Ingestion} (offline, fires when an SOP lands in S3): \emph{parse} (PDF / OCR for scans / DOCX / transcripts / Jira CSV) $\rightarrow$ \emph{chunk} (section-aware, $\sim$150 chunks per typical SOP) $\rightarrow$ \emph{enrich} (clinical NER for organisms / drugs / specimens, code expansion via UMLS, PHI detection \& redaction, theme tag from G1--G8) $\rightarrow$ \emph{embed} (both meaning-based vectors and keyword tokens for BM25) $\rightarrow$ \emph{store} (OpenSearch for the indexes, DynamoDB for chunk + doc metadata, S3 keeps the originals as the citation target).
+
+\textbf{Retrieval} (real-time, per chat query): normalize $\rightarrow$ \emph{intent decode} into \texttt{\{action, themes, discipline, granularity, confidence\}} $\rightarrow$ expand with synonyms $\rightarrow$ \emph{multi-slot retrieve} (in-theme target / Cyto analogy / adjacent themes / Jira exemplars / regulatory --- each slot runs keyword + meaning search and fuses results) $\rightarrow$ rerank $\rightarrow$ assemble a role-labeled prompt (\textsc{Primary} / \textsc{Analogy} / \textsc{Adjacent} / \textsc{Exemplar} / \textsc{Reg}) $\rightarrow$ LLM generation with citations resolved to S3 doc + section + version.
+
+Two thresholds gate the chat to prevent hallucination:
+\begin{itemize}
+  \item $\tau = 0.7$ \emph{intent confidence} --- below this, ask a clarifying question instead of retrieving.
+  \item $\theta = 0.5$ \emph{retrieval relevance} --- if every slot falls below, refuse and offer the user three options (upload SOPs, draft from analogy with caveat, clarify scope).
+\end{itemize}
+
+\section{Worked example --- one query end-to-end}
+
+\textbf{Query:} \emph{``Generate epics for specimen rejection in microbiology.''}
+
+\textbf{Intent decode:} \texttt{\{action: generate, themes: [G1], discipline: Micro, granularity: epic, conf: 0.91\}} $\Rightarrow$ proceed.
+
+\textbf{Retrieve $\rightarrow$ rerank:} 48 candidate chunks across 5 slots, trimmed to 20 by the reranker; low-score gate passes.
+
+\textbf{Assemble:} 6{,}840-token prompt with the chunks role-labeled and the output schema attached.
+
+\textbf{LLM output (structured JSON, abbreviated):}
+
+\noindent\texttt{\small \{ epic\_id: epic\_draft\_3, title: "Specimen Rejection Workflow", theme: G1,\\
+\hspace*{1em}citations: ["s3://.../SOP-MICRO-007 \S AC", "s3://.../SOP-CYTO-021 \S Procedure", "CLSI M22 \S 3.4"],\\
+\hspace*{1em}stories: ["Validate transport temperature", "Flag specimens older than 4 h", \ldots] \}}
+
+\textbf{Telemetry written:} query id, intent, slot scores, total chunks (20), tokens (6{,}840), latency ($\sim$4.3 s).
+
+\section{What ships}
+
+\begin{itemize}
+  \item \textbf{Output A --- Jira artifacts.} Epics (with optional \texttt{cyto\_epic\_analog} annotation), per-SOP concrete Stories in all four shapes, synthesized capability Stories cross-linked to their children, and the dependency edges between them.
+  \item \textbf{Output B --- Per-culture YAML profile.} One profile per culture in scope. Every value is typed (units / enums / nullable rules) and cites the SOP excerpt it came from. Inline references to the related Story's AC give traceability without duplicating values into the Story body.
+\end{itemize}
+
+\textbf{Example YAML excerpt} (\texttt{cultures/urine.yaml}):
+
+\noindent\texttt{\small centrifugation:\\
+\hspace*{1em}speed:    \{value: 1500, units: g\}    \# cite: SOP-MICRO-014 \S 3.2 L41--43\\
+\hspace*{1em}duration: \{value: 5,\ \ \ units: min\}  \# cite: SOP-MICRO-014 \S 3.2 L44\\
+\hspace*{1em}temp:     \{value: 4,\ \ \ units: degC\} \# cite: SOP-MICRO-014 \S 3.2 L45\\
+related\_story\_ac: STORY-1042\#AC-2}
+
+\section{Cross-cutting (one line)}
+
+KMS encryption at rest \& in transit; IAM least-privilege with VPC endpoints; DLQ for parse / OCR / embed failures; CloudWatch metrics + alarms; CloudTrail audit log on every API call. \emph{Generalization:} when Histology arrives, the same pipeline runs --- only the exemplar corpus and config priors get extended.
+
+\end{document}
