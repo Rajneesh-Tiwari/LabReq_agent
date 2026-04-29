@@ -9,6 +9,9 @@
 \usepackage{microtype}
 \usepackage{tikz}
 \usepackage{float}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
 
 \setlength{\parskip}{4pt}
@@ -40,6 +43,7 @@
 \definecolor{xfill}{HTML}{FFE6CC}
 \definecolor{xdraw}{HTML}{D79B00}
 \definecolor{notefill}{HTML}{FAFAFA}
+\definecolor{tablehd}{HTML}{F0F0F0}
 
 \tikzset{
   blk/.style={rectangle, rounded corners=2pt, line width=0.5pt, align=center, font=\scriptsize, inner sep=3pt, minimum height=0.85cm},
@@ -56,6 +60,8 @@
   arrdash/.style={->, >={Stealth[length=4pt]}, line width=0.5pt, draw=xdraw, dashed},
 }
 
+\renewcommand{\arraystretch}{1.15}
+
 \begin{document}
 
 \begin{center}
@@ -65,7 +71,9 @@
 
 \section{What the system does}
 
-An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid retrieval substrate (BM25 + dense), reads them and emits two artifacts: \textbf{(A)} Jira-ready Epic/Story tree and \textbf{(B)} per-culture YAML configuration profiles (urine, blood, target-pathogen). The Cyto Jira backlog is a \emph{teaching corpus} (few-shot exemplars), not a registry. The agent stops at Story --- Tasks are dev-authored.
+A subject-matter expert (SME) drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid retrieval substrate (BM25 + dense), reads them and emits two artifacts: \textbf{(A)} a Jira-ready Epic / Story tree, and \textbf{(B)} per-culture YAML configuration profiles (urine, blood, target-pathogen).
+
+The Cytology Jira backlog is used as a \emph{teaching corpus} (few-shot exemplars), not a registry to match against. The agent stops at Story --- Tasks (test IDs, library versions, DB columns) are dev-authored once the team has codebase visibility.
 
 \textbf{Color legend:} \tikz[baseline=-0.5ex]\node[src,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{src};\, source/data \quad
 \tikz[baseline=-0.5ex]\node[cmp,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{cmp};\, compute \quad
@@ -73,6 +81,26 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
 \tikz[baseline=-0.5ex]\node[val,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{val};\, validator/decision \quad
 \tikz[baseline=-0.5ex]\node[dst,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{store};\, storage/output \quad
 \tikz[baseline=-0.5ex]\node[xcut,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{xc};\, cross-cutting
+
+% =====================================================================
+\section{Key terms (glossary)}
+% =====================================================================
+
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}p{2.5cm}X@{}}
+\toprule
+SOP & Standard Operating Procedure --- the source document the agent reads.\\
+Epic & A capability domain; maps to a Jira Epic. E.g.\ \emph{Microbiology Specimen Receipt}.\\
+Story & A dev-actionable unit emitted by the agent. Each Story declares one of four \texttt{shape} values. Maps to a Jira Story.\\
+Shape & Categorization assigned to each Story at extraction time. Drives Validator routing and downstream interpretation. Four values: \texttt{capability}, \texttt{workflow-stage-split}, \texttt{configuration-instance}, \texttt{cleanup}.\\
+Theme (G1--G8) & Eight content tags spanning the LIMS workflow: G1 Pre-Analytic, G2 Analytic, G3 Post-Analytic, G4 Reporting, G5 QC, G6 Compliance, G7 Instrumentation, G8 Platform. Multi-label per chunk.\\
+Teaching corpus & Curated SME-validated (SOP excerpt $\rightarrow$ Story) pairs from Cyto. Used as few-shot exemplars at extraction time.\\
+Retrieval slot & A parallel retrieval channel scoped to a particular discipline + theme combination. Up to 5 slots fire per query.\\
+Intent & Structured interpretation of a user query: \texttt{\{action, themes, discipline, granularity, refs, confidence\}}.\\
+$\tau$ (tau) & Intent-confidence threshold ($0.7$). Below this, the system asks a clarifying question rather than retrieving.\\
+$\theta$ (theta) & Retrieval-relevance threshold ($0.5$). If every slot falls below this, the system refuses to generate.\\
+Batch wait & The pipeline pause between Validator gate \#1 and Cross-SOP Synthesis. Synthesis cannot run until every per-SOP Story has cleared gate \#1.\\
+\bottomrule
+\end{tabularx}
 
 % =====================================================================
 \section{Agent pipeline --- 5 agents, Validator gates twice}
@@ -88,45 +116,49 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
   \node[ai, right=of val1] (synth) {\textbf{4. Cross-SOP}\\\textbf{Synthesis}\\\tiny $\geq$2 distinct SOPs};
   \node[val, right=of synth] (val2) {\textbf{3b. Validator}\\\textbf{gate \#2}\\\tiny capability rubric};
   \node[dst, right=of val2] (deps) {\textbf{5. Dep.}\\\textbf{Resolver}\\\tiny final pass};
-
   \draw[arr] (sop) -- (epic);
   \draw[arr] (epic) -- (story);
   \draw[arr] (story) -- (val1);
   \draw[arr] (val1) -- (synth);
   \draw[arr] (synth) -- (val2);
   \draw[arr] (val2) -- (deps);
-
-  % batch wait annotation
   \node[lab, below=0.05cm of val1] (bw) {batch wait};
   \draw[->, dashed, draw=cmpdraw, line width=0.3pt] (val1.south) ++(0,-0.05) -- ++(0,-0.20) -| (synth.south);
-
-  % outputs
   \node[dst, below=1.1cm of synth] (jira) {\textbf{Output A}\\Jira artifacts\\\tiny Epics + Stories};
   \node[dst, below=1.1cm of val2] (yaml) {\textbf{Output B}\\YAML profiles\\\tiny urine / blood / pathogen};
   \draw[arr] (deps.south) |- (yaml.east);
   \draw[arr] (deps.south) |- (jira.east);
-
-  % validator-link annotation
   \draw[<->, dashed, draw=valdraw, line width=0.3pt]
     (val1.north) ++(0,0.05) -- ++(0,0.30) -| (val2.north);
   \node[lab, above=0.32cm of synth] {same Validator agent, two call sites};
 \end{tikzpicture}
 \end{figure}
 
-\textbf{What each box does and emits:}
-
 \begin{enumerate}
-  \item \textbf{Epic Extractor} --- identifies capability domains. \emph{Out:} \texttt{\{id, title, discipline, themes[], cyto\_epic\_analog?\}}.
-  \item \textbf{Story Extractor} --- per-SOP, multi-shape. Each Story declares its \texttt{shape} for downstream routing.
+  \item \textbf{Epic Extractor} --- identifies capability domains. \emph{Out:} Epic record per domain.
+  \item \textbf{Story Extractor} --- per-SOP, multi-shape. Different elements of one SOP can take different shapes.
   \item \textbf{Validator gate \#1} --- shape verification + shape-specific sub-rubric. Two revisions then SME-escalate.
-  \item \textbf{Cross-SOP Synthesis} --- runs after gate \#1 clears the entire batch. Behavioral-similarity clustering over (title + AC + source excerpt); a cluster qualifies only if its members come from $\geq 2$ \emph{distinct} SOPs. Lifts a capability Story per cluster, with \texttt{cross\_links[]} back to the contributing concretes.
+  \item \textbf{Cross-SOP Synthesis} --- runs after gate \#1 clears the entire batch. Behavioral-similarity clustering over (title + AC + source excerpt); cluster qualifies only if its members come from $\geq 2$ \emph{distinct} SOPs. Lifts a capability Story per cluster, with \texttt{cross\_links[]} back to the contributing concretes.
   \item \textbf{Validator gate \#2} --- same agent as 3a; capability rubric only. Synthesized stories are a \emph{new} artifact, not a derivative, so they re-pass the bar.
   \item \textbf{Dependency Resolver} --- story$\leftrightarrow$story dependencies, stage-split sibling links, capability$\leftrightarrow$child links. Finalizes the artifact graph for Jira push.
 \end{enumerate}
 
 % =====================================================================
-\section{Four story shapes --- per-SOP extraction replicates the Cyto mix}
+\section{Four story shapes --- what ``shape'' means}
 % =====================================================================
+
+A \textbf{shape} is the categorization the Story Extractor assigns to each Story. It tells the Validator which sub-rubric to apply, and tells downstream consumers (devs, the YAML emitter) how to interpret the AC. Per-SOP extraction picks one of four shapes per element. Cross-SOP synthesis only ever emits the \texttt{capability} shape.
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.2cm}p{6.5cm}X@{}}
+\toprule
+\textbf{shape} & \textbf{Use when\ldots} & \textbf{Validator rubric} \\
+\midrule
+capability & SOP describes a configurable system feature you can imagine multiple labs/cultures parameterizing & MUST/SHALL on AC; testable; configurability boundaries explicit \\
+workflow-stage-split & Same capability, but SOP describes different behavior at different workflow stages (before / during / after results) & Stage explicit in title; sibling stories enumerated and cross-linked \\
+configuration-instance & Concrete data values for one culture / lab. \emph{No new feature --- just data.} & Typed values + verbatim citation. \emph{No MUST/SHALL.} \\
+cleanup & Modify or remove an existing artifact. \emph{No new feature.} & Target named + before/after observable + regression risk \\
+\bottomrule
+\end{tabularx}
 
 \begin{figure}[H]
 \centering
@@ -155,12 +187,129 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
 \end{tikzpicture}
 \end{figure}
 
-\textbf{Story schema (shape drives Validator routing):}
+% =====================================================================
+\section{Schemas --- deep dive}
+% =====================================================================
 
-\noindent\texttt{\scriptsize \{ id, epic\_id, title, description,\\
-\hspace*{1em}shape $\in$ \{capability, workflow-stage-split, configuration-instance, cleanup\},\\
-\hspace*{1em}acceptance\_criteria[\,], source\_citations[\,], dependencies[\,], cross\_links[\,],\\
-\hspace*{1em}estimated\_complexity $\in$ \{S, M, L\}, source\_chunks[\,] \}}
+\subsection{Epic schema}
+
+\noindent\texttt{\scriptsize \{ id: "EPIC-MICRO-001", title: "Microbiology Specimen Receipt",\\
+\hspace*{1em}description: "...", discipline: "microbiology",\\
+\hspace*{1em}themes: ["G1","G5"], cyto\_epic\_analog: "EPIC-CYTO-007" \}}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.2cm}p{2.0cm}p{1.4cm}X@{}}
+\toprule
+\textbf{field} & \textbf{type} & \textbf{req'd} & \textbf{notes} \\
+\midrule
+id & string & yes & Jira-shaped Epic ID. \\
+title & string & yes & Short capability-domain name. \\
+description & string & yes & 1--3 sentence scope statement. \\
+discipline & enum & yes & \texttt{microbiology} $|$ \texttt{histology} $|$ \texttt{cytology}. \\
+themes[] & array $\langle$G1..G8$\rangle$ & yes & Multi-label; an Epic can span themes. \\
+cyto\_epic\_analog & string & no & Cyto Epic ID this Epic is structurally analogous to (D13). \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Story schema}
+
+\noindent\texttt{\scriptsize \{ id: "STORY-MICRO-1042", epic\_id: "EPIC-MICRO-001", shape: "capability",\\
+\hspace*{1em}title: "Configurable specimen rejection rules engine", description: "...",\\
+\hspace*{1em}acceptance\_criteria: [\{when, then, expected\_value?\}, ...],\\
+\hspace*{1em}source\_citations: [\{doc\_id, section, line\_range\}, ...],\\
+\hspace*{1em}dependencies: ["STORY-MICRO-1018"],\\
+\hspace*{1em}cross\_links:  ["STORY-MICRO-1043","STORY-MICRO-1044","STORY-MICRO-1045"],\\
+\hspace*{1em}estimated\_complexity: "M", edge\_cases\_handled: [...],\\
+\hspace*{1em}status: "validated", source\_chunks: ["chunk\_001","chunk\_017"] \}}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.4cm}p{3.0cm}p{1.2cm}X@{}}
+\toprule
+\textbf{field} & \textbf{type} & \textbf{req'd} & \textbf{notes} \\
+\midrule
+id & string & yes & Jira-shaped Story ID. \\
+epic\_id & string & yes & FK to parent Epic. \\
+shape & enum (4) & yes & Drives Validator routing. \\
+title & string & yes & Concrete + unambiguous; for stage-split, must name the stage. \\
+description & string & yes & User-story format for capability/stage-split; descriptive prose for config-instance/cleanup. \\
+acceptance\_criteria[] & array & yes & Capability/stage-split: MUST/SHALL phrasing. Config-instance: \texttt{expected\_value} populated. Cleanup: before/after wording. \\
+source\_citations[] & array $\langle$\{doc\_id, section, line\_range\}$\rangle$ & yes & Must resolve to indexed chunks; verbatim excerpt for config-instance. \\
+dependencies[] & array $\langle$Story ID$\rangle$ & no & Stories that must complete before this one is workable. \\
+cross\_links[] & array $\langle$Story ID$\rangle$ & no & Capability $\leftrightarrow$ concrete contributors; stage-split sibling group. Backbone of the Story DAG. \\
+technical\_hints & string & no & Dev-facing guidance. \\
+estimated\_complexity & enum \texttt{S}$|$\texttt{M}$|$\texttt{L} & yes & Heuristic, sprint sizing. \\
+edge\_cases\_handled[] & array of strings & no & Surfaced corner cases. \\
+status & enum & yes & \texttt{draft} $|$ \texttt{validated} $|$ \texttt{ready}. \\
+source\_chunks[] & array $\langle$chunk ID$\rangle$ & yes & Audit trail to the retrieval substrate. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Cluster schema (intermediate, in Cross-SOP Synthesis)}
+
+Not persisted to Jira; lives only between gate \#1 and gate \#2 in memory.
+
+\noindent\texttt{\scriptsize \{ cluster\_id: "clust\_rejection\_3sop",\\
+\hspace*{1em}member\_story\_ids: ["STORY-MICRO-1043","STORY-MICRO-1044","STORY-MICRO-1045"],\\
+\hspace*{1em}source\_sops: ["doc\_micro\_014\_v3","doc\_micro\_022\_v1","doc\_micro\_037\_v2"],\\
+\hspace*{1em}centroid\_summary: "Reject specimen on a culture-specific predicate.",\\
+\hspace*{1em}proposed\_capability\_title: "Configurable specimen rejection rules engine" \}}
+
+A cluster qualifies for lifting \textbf{iff} \texttt{len(unique(source\_sops)) >= 2}. Two stories from the same SOP do not qualify, even if they cluster tightly.
+
+\subsection{Validator output schema (when a Story fails)}
+
+\noindent\texttt{\scriptsize \{ story\_id: "STORY-MICRO-1042", verdict: "revise",\\
+\hspace*{1em}shape\_declared: "capability", shape\_verified: "capability",\\
+\hspace*{1em}failed\_checks: [\\
+\hspace*{2em}\{rule:"must\_shall\_present", severity:"error", message:"AC 1 lacks MUST/SHALL phrasing."\},\\
+\hspace*{2em}\{rule:"ambiguous\_quantifier", severity:"error", message:"AC 2 uses 'appropriate'."\}\\
+\hspace*{1em}], attempt: 1 \}}
+
+% =====================================================================
+\section{Story relationships (graph view)}
+% =====================================================================
+
+The Story schema's \texttt{dependencies[]} and \texttt{cross\_links[]} arrays serialize a directed acyclic graph. Walking it answers ``what's blocked by X?'' or ``if I deprecate the synthesized capability story, which concretes need merging?''
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm]
+  \node[ai, minimum width=3.4cm] (epic) at (5.5,4) {\textbf{Epic: Microbiology Specimen Rejection}\\\tiny themes: [G1, G5]};
+  \node[dst, minimum width=2.6cm] (cap) at (3,2.4)
+    {\textbf{Cap1} {\tiny [capability,\,synthesized]}\\\tiny Configurable rejection rules};
+  \node[val, minimum width=2.6cm] (conf) at (8,2.4)
+    {\textbf{Conf1} {\tiny [configuration-instance]}\\\tiny Urine centrifuge params};
+  \node[val, minimum width=2.0cm] (c1) at (0.5,0.6) {\textbf{C1}\\\tiny urine: turbid};
+  \node[val, minimum width=2.0cm] (c2) at (3,0.6)   {\textbf{C2}\\\tiny blood: hemolyzed};
+  \node[val, minimum width=2.0cm] (c3) at (5.5,0.6) {\textbf{C3}\\\tiny pathogen: container};
+  \node[xcut, minimum width=2.6cm] (cln) at (8,0.6) {\textbf{Cln1} {\tiny [cleanup]}\\\tiny Remove Result Bucket};
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (cap);
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (conf);
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (c1.north);
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (c2.north);
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (c3.north);
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (epic) -- (cln.north east);
+  \draw[->, draw=outdraw, dashed, line width=0.6pt] (cap) -- (c1);
+  \draw[->, draw=outdraw, dashed, line width=0.6pt] (cap) -- (c2);
+  \draw[->, draw=outdraw, dashed, line width=0.6pt] (cap) -- (c3.north west);
+  \draw[->, draw=valdraw, line width=0.7pt] (cap) -- node[lab,above]{depends\_on} (conf);
+  \node[lab, anchor=west] at (10.6, 4.0)   {\textbf{Edge legend}};
+  \draw[->, draw=cmpdraw!50, line width=0.4pt] (10.6,3.55) -- (11.4,3.55);
+  \node[lab, anchor=west] at (11.5,3.55) {parent\_of};
+  \draw[->, draw=outdraw, dashed, line width=0.6pt] (10.6,3.15) -- (11.4,3.15);
+  \node[lab, anchor=west] at (11.5,3.15) {cross\_links};
+  \draw[->, draw=valdraw, line width=0.7pt] (10.6,2.75) -- (11.4,2.75);
+  \node[lab, anchor=west] at (11.5,2.75) {depends\_on};
+\end{tikzpicture}
+\end{figure}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{2.5cm}p{3.5cm}X@{}}
+\toprule
+\textbf{edge} & \textbf{direction} & \textbf{meaning} \\
+\midrule
+parent\_of & Epic $\rightarrow$ Story & Implicit Jira hierarchy (encoded in \texttt{epic\_id}). \\
+cross\_links & Story $\leftrightarrow$ Story & Bidirectional association. Capability $\leftrightarrow$ concrete (synthesis); stage-split sibling sets. \\
+depends\_on & Story $\rightarrow$ Story & Directed prerequisite. The Dependency Resolver topologically orders the backlog for sprint planning. \\
+\bottomrule
+\end{tabularx}
 
 % =====================================================================
 \section{Cross-SOP synthesis --- recurrence becomes capability}
@@ -172,25 +321,66 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
   \node[val] (sop1) {\textbf{Urine SOP}\\\tiny ``reject if turbid''};
   \node[val, below=of sop1] (sop2) {\textbf{Blood SOP}\\\tiny ``reject if hemolyzed''};
   \node[val, below=of sop2] (sop3) {\textbf{Pathogen SOP}\\\tiny ``reject if container wrong''};
-
   \node[ai, right=2.2cm of sop2, minimum width=3.6cm, minimum height=2.0cm, align=center] (cluster)
     {\textbf{Behavioral cluster}\\\scriptsize over (title + AC + excerpt)\\[2pt]
      \tiny\itshape qualifies iff\\\tiny\itshape members $\in \geq 2$ distinct SOPs};
-
   \node[dst, right=of cluster, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (cap)
     {\textbf{Capability Story (synthesized)}\\\tiny\itshape passes Validator gate \#2\\[2pt]
      \tiny\textbf{Title:} Configurable specimen rejection rules engine\\
      \tiny\textbf{AC:} System SHALL allow rule \{predicate, threshold, action\}; per-culture profile; rejection record emitted.\\
      \tiny\textbf{cross\_links:} urine\#$T$, blood\#$H$, pathogen\#$C$};
-
   \draw[arr] (sop1.east) -- (cluster.west);
   \draw[arr] (sop2.east) -- (cluster.west);
   \draw[arr] (sop3.east) -- (cluster.west);
   \draw[arr, line width=0.7pt] (cluster.east) -- (cap.west);
-
   \node[lab, below=0.05cm of cluster] {concretes are kept; capability added as sibling};
 \end{tikzpicture}
 \end{figure}
+
+The recurrence threshold ($\geq 2$ distinct SOPs) is tunable. With three SOPs in the POC, this means anything seen in two of three lifts. The synthesized capability story passes Validator gate \#2 before persistence.
+
+% =====================================================================
+\section{Cyto $\rightarrow$ Micro lineage (graph view)}
+% =====================================================================
+
+Three distinct mechanisms transfer information from Cyto to Micro. They operate at different times in the system's life cycle.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.4cm]
+  \node[font=\scriptsize\bfseries] at (1.5,4.6) {Cyto side};
+  \node[font=\scriptsize\bfseries] at (8,4.6)   {Micro side};
+  \node[font=\scriptsize\itshape, text=black!60] at (12.0,4.6) {time of use};
+  \node[ai, minimum width=3.0cm] (cy_e) at (1.5,3.6)  {\textbf{Cyto Epic}\\\tiny Specimen Receipt};
+  \node[dst, minimum width=3.0cm] (mi_e) at (8,3.6)   {\textbf{Micro Epic}\\\tiny Specimen Receipt};
+  \draw[->, draw=valdraw, line width=0.7pt] (cy_e) -- node[lab,above]{epic\_analog (D13)} (mi_e);
+  \node[lab, anchor=west] at (10.6,3.6) {Epic Extractor};
+  \node[ai, minimum width=3.0cm] (cy_s) at (1.5,2.2)  {\textbf{Cyto Story}\\\tiny SME-validated\\\tiny excerpt $\rightarrow$ story pair};
+  \node[dst, minimum width=3.0cm] (mi_s) at (8,2.2)   {\textbf{Micro Story}\\\tiny generated by\\\tiny Story Extractor};
+  \draw[->, draw=aidraw, line width=0.7pt] (cy_s) -- node[lab,above]{exemplar\_of (few-shot)} (mi_s);
+  \node[lab, anchor=west] at (10.6,2.2) {Story Extractor};
+  \node[ai, minimum width=3.0cm] (cy_c) at (1.5,0.7)  {\textbf{Cyto chunks}\\\tiny indexed in OpenSearch};
+  \node[dst, minimum width=3.0cm] (mi_p) at (8,0.7)   {\textbf{Chat prompt}\\\tiny ANALOGY slot};
+  \draw[->, draw=outdraw, dashed, line width=0.6pt] (cy_c) -- node[lab,above]{retrieval\_analogy (slot 2)} (mi_p);
+  \node[lab, anchor=west] at (10.6,0.7) {per-query (real-time)};
+  \begin{scope}[on background layer]
+    \draw[dashed, draw=cmpdraw!40] (4.5,4.2) -- (4.5,0.0);
+    \draw[dashed, draw=cmpdraw!40] (10.4,4.2) -- (10.4,0.0);
+  \end{scope}
+\end{tikzpicture}
+\end{figure}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{3.0cm}p{4.0cm}X@{}}
+\toprule
+\textbf{mechanism} & \textbf{direction} & \textbf{when it fires / what flows} \\
+\midrule
+epic\_analog & Cyto Epic $\rightarrow$ Micro Epic & At Epic-Extractor time. Just an ID reference --- recorded for SME traceability (D13). \\
+exemplar\_of & Cyto Story $\rightarrow$ Micro Story & At Story-Extractor time. The Cyto (excerpt $\rightarrow$ Story) pair lands in the prompt as an in-context example. \\
+retrieval\_analogy & Cyto chunks $\rightarrow$ chat prompt & Per-query, real-time. Retrieved Cyto excerpts populate the ANALOGY context section. \emph{Adapt, don't copy.} \\
+\bottomrule
+\end{tabularx}
+
+The same Cyto material thus serves three roles: a curated few-shot teaching set, an indexed corpus for live retrieval, and a structural reference at the Epic level.
 
 % =====================================================================
 \section{Ingestion substrate --- S3 to indexed chunks}
@@ -207,7 +397,6 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
   \node[ai, below=0.55cm of doc] (enrich) {\textbf{Enrich}\\\tiny NER (organisms/drugs)\\\tiny UMLS codes, PHI, themes G1--G8};
   \node[ai, left=of enrich] (embed) {\textbf{Embed}\\\tiny Titan v2 dense\\\tiny + BM25 sparse};
   \node[dst, left=of embed] (store) {\textbf{Store}\\\tiny OpenSearch k-NN/BM25\\\tiny DynamoDB metadata\\\tiny S3 originals};
-
   \draw[arr] (s3in) -- (sqs);
   \draw[arr] (sqs) -- (parse);
   \draw[arr] (parse) -- (doc);
@@ -223,20 +412,19 @@ An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid 
 \begin{tikzpicture}[node distance=0.15cm]
   \node[io, text width=5.4cm] (i1) {\textbf{[parse out]}\\
 text: 28{,}420 chars / 18 pages\\
-format: docx\\
-ocr\_used: false, parse\_ms: 320};
+format: docx, ocr\_used: false, parse\_ms: 320};
   \node[io, right=of i1, text width=5.4cm] (i2) {\textbf{[doc process out]}\\
 doc\_id: doc\_micro\_014\_v3\_abc12\\
 discipline: Microbiology, version: v3\\
 section\_map: \{Purpose:[200,450], Procedure:[721,2400], AC:[2401,3100], QC:[3101,3650]\}};
-  \node[io, right=of i2, text width=5.4cm] (i3) {\textbf{[enrich dst, chunk\_001]}\\
-entities: \{organisms:["Gram-positive cocci"], specimens:["sputum"], codes:["87209"]\}\\
+  \node[io, right=of i2, text width=5.4cm] (i3) {\textbf{[enrich out, chunk\_001]}\\
+entities: \{organisms:["Gram-pos cocci"], specimens:["sputum"], codes:["87209"]\}\\
 phi\_detected: false\\
 themes: \{G2: 0.84, G5: 0.41\}};
 \end{tikzpicture}
 
 \begin{tikzpicture}[node distance=0.15cm]
-  \node[io, text width=8.3cm] (i4) {\textbf{[embed dst, chunk\_001]}\\
+  \node[io, text width=8.3cm] (i4) {\textbf{[embed out, chunk\_001]}\\
 dense\_vector: [0.0234, -0.1849, ..., 0.2891]\, (1024-d, Bedrock Titan v2)\\
 bm25\_tokens\_enriched: ["slide","preparation","87209","smear","primary","source",...]};
   \node[io, right=of i4, text width=8.3cm] (i5) {\textbf{[store, sinks written]}\\
@@ -259,14 +447,12 @@ PUT chunk\_001 $\rightarrow$ DynamoDB \texttt{chunk\_metadata} (entities, themes
   \node[ai, right=0.5cm of dec] (exp) {\textbf{Expand}\\\tiny paraphrase +\\\tiny UMLS synonyms};
   \node[xcut, above=0.4cm of dec] (clar) {\textbf{Clarify}\\\tiny structured Q,\\\tiny loop back};
   \node[xcut, below=0.4cm of dec] (sess) {\textbf{Session-only}\\\tiny recall / edit};
-
   \node[dst, below=0.7cm of pre, minimum width=10.5cm, minimum height=1.2cm, align=center] (slots)
     {\textbf{Multi-slot hybrid retrieval} (BM25 + Dense $\rightarrow$ RRF fusion, per slot)\\[2pt]
      \scriptsize PRIMARY (Micro/active) \,$|$\, ANALOGY (Cyto) \,$|$\, ADJACENT (centroid neighbors) \,$|$\, EXEMPLAR (Jira, cond.) \,$|$\, REG (regulatory, cond.)};
   \node[ai, below=0.32cm of slots] (rer) {\textbf{Rerank}\\\tiny cross-encoder per slot\\\tiny low-score gate ($\theta$=0.5)};
   \node[cmp, right=of rer] (asm) {\textbf{Assemble}\\\tiny dedupe, token trim,\\\tiny role-labeled context};
   \node[ai, right=of asm] (gen) {\textbf{Generate}\\\tiny Bedrock Claude\\\tiny structured JSON + cites};
-
   \draw[arr] (q) -- (pre);
   \draw[arr] (pre) -- (intent);
   \draw[arr] (intent) -- (dec);
@@ -324,7 +510,6 @@ total tokens: 6{,}840};
   \node[dst, right=of p] (acc) {\textbf{ACCEPT}};
   \node[xcut, below=0.35cm of p] (rev) {\textbf{Revise}\\\tiny return failed checks\\\tiny ($\leq$ 2 attempts)};
   \node[blk, draw=red!70!black, fill=red!10, right=of rev] (esc) {\textbf{SME escalate}\\\tiny after 2 failed attempts};
-
   \draw[arr] (in) -- (v);
   \draw[arr] (v) -- (p);
   \draw[arr] (p) -- node[lab, above]{yes} (acc);
@@ -336,30 +521,89 @@ total tokens: 6{,}840};
 
 \textbf{Sub-rubrics by shape (cheat sheet):}
 \begin{itemize}
-  \item \textbf{Capability:} MUST/SHALL; testable AC; no ambiguous quantifiers; configurability boundaries; SOP citation; complexity S/M/L; edge cases enumerated.
-  \item \textbf{Stage-split:} stage explicit in title; entry/exit observable; siblings enumerated and cross-linked; transition contract; boundary cases.
-  \item \textbf{Configuration-instance:} typed concrete values; target table/profile named; SOP excerpt verbatim; scope (culture/lab) stated. \emph{MUST/SHALL not required.}
-  \item \textbf{Cleanup:} target artifact named (id, screen path, file path); before/after observable; regression risk acknowledged; DoD includes smoke test. \emph{MUST/SHALL not required.}
+  \item \textbf{Capability:} MUST/SHALL on every AC; testable; no ambiguous quantifiers (``appropriate'', ``relevant'', ``necessary''); configurability boundaries called out; SOP citation present and resolves; complexity S/M/L; edge cases enumerated.
+  \item \textbf{Stage-split:} stage explicit in title; entry/exit observable per stage; siblings enumerated and cross-linked; transition contract clear; boundary cases handled.
+  \item \textbf{Configuration-instance:} typed concrete values (units / enums / nullable rules); target table or profile named (e.g.\ \texttt{cultures/urine.yaml\#centrifugation}); SOP excerpt cited verbatim; scope (culture/lab) stated. \emph{MUST/SHALL not required.}
+  \item \textbf{Cleanup:} target artifact named (id, screen path, file path); before/after observable; regression risk acknowledged; DoD includes a smoke test or QA path. \emph{MUST/SHALL not required.}
 \end{itemize}
 
 % =====================================================================
-\section{What ships + cross-cutting}
+\section{What ships --- Output A (Jira) and Output B (YAML)}
 % =====================================================================
 
-\begin{itemize}
-  \item \textbf{Output A --- Jira artifacts.} Epics (with optional \texttt{cyto\_epic\_analog}), per-SOP concrete Stories in 4 shapes, synthesized capability Stories cross-linked to children, dependency edges between them.
-  \item \textbf{Output B --- Per-culture YAML profile.} One per culture in scope; values typed (units / enums / nullable rules); SOP excerpt cited inline; \texttt{related\_story\_ac} links to Story for traceability.
-\end{itemize}
+\textbf{Output A --- Jira artifacts.} The connected Epic / Story DAG (graph above), pushed to Jira via REST. The graph is what the dev team works against; the YAML profile (Output B) is what their code consumes at runtime.
 
-\textbf{Example YAML excerpt} (\texttt{cultures/urine.yaml}):
+\textbf{Output B --- Per-culture YAML configuration profile.} One YAML file per culture in scope. Carries the concrete typed values that \texttt{configuration-instance} Stories' AC referenced. Profiles are versioned, dated, and cite back to the SOPs they draw from. \textbf{The Story body never duplicates these values} --- it references them by \texttt{related\_story\_ac}, so a single source of truth is preserved.
 
-\noindent\texttt{\scriptsize centrifugation:\\
-\hspace*{1em}speed:\ \ \ \{value: 1500, units: g\}\ \ \ \# cite: SOP-MICRO-014 \S 3.2 L41--43\\
-\hspace*{1em}duration: \{value: 5,\ \ \ units: min\}\ \# cite: SOP-MICRO-014 \S 3.2 L44\\
-\hspace*{1em}temp:\ \ \ \ \{value: 4,\ \ \ units: degC\} \# cite: SOP-MICRO-014 \S 3.2 L45\\
-related\_story\_ac: STORY-1042\#AC-2}
+\subsection{Full profile structure (\texttt{cultures/urine.yaml})}
 
-\textbf{Cross-cutting:} KMS encryption (rest + transit); IAM least-privilege + VPC endpoints (Bedrock calls stay in-VPC); DLQ for parse/OCR/embed failures; CloudWatch metrics + alarms (e.g.\ OCR fail-rate $> 5\%$); CloudTrail audit log; idempotent ingestion via content-hash dedupe.
+\noindent\texttt{\scriptsize profile:\\
+\hspace*{1em}culture: urine\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\#\, urine $|$ blood $|$ target\_pathogen\\
+\hspace*{1em}version: 3\\
+\hspace*{1em}effective\_date: 2026-04-15\\
+\hspace*{1em}source\_sops: [doc\_micro\_014\_v3, doc\_micro\_022\_v1]\\
+\\
+pre\_analytic:\\
+\hspace*{1em}collection:\\
+\hspace*{2em}container:\,\,\,\,\,\,\{value: "sterile cup", units: enum, citation: "doc\_micro\_014\_v3 \S 1.2 L8"\}\\
+\hspace*{2em}volume\_min:\,\,\,\,\{value: 10, units: mL, citation: "doc\_micro\_014\_v3 \S 1.2 L11"\}\\
+\hspace*{1em}transport:\\
+\hspace*{2em}temp\_range:\,\,\,\,\{min: 2, max: 8, units: degC, citation: "doc\_micro\_014\_v3 \S 1.4 L18-19"\}\\
+\hspace*{2em}time\_max:\,\,\,\,\,\,\{value: 4, units: h, citation: "doc\_micro\_014\_v3 \S 1.4 L20"\}\\
+\hspace*{1em}rejection\_predicates:\\
+\hspace*{2em}- id: REJ\_TURBID\\
+\hspace*{3em}condition: "turbidity > threshold"\\
+\hspace*{3em}threshold: \{value: 200, units: NTU\}\\
+\hspace*{3em}action: reject\\
+\hspace*{3em}citation: "doc\_micro\_014\_v3 \S 1.5 L24"\\
+\\
+analytic:\\
+\hspace*{1em}centrifugation:\\
+\hspace*{2em}speed:\,\,\,\,\,\{value: 1500, units: g,\,\,\,\,citation: "doc\_micro\_014\_v3 \S 3.2 L41-43"\}\\
+\hspace*{2em}duration: \{value: 5,\,\,\,\,units: min,\,\,\,citation: "doc\_micro\_014\_v3 \S 3.2 L44"\}\\
+\hspace*{2em}temp:\,\,\,\,\,\,\{value: 4,\,\,\,\,units: degC,\,\,citation: "doc\_micro\_014\_v3 \S 3.2 L45"\}\\
+\hspace*{1em}inoculation:\\
+\hspace*{2em}media:\\
+\hspace*{3em}- \{type: BAP, volume\_uL: 10, citation: "doc\_micro\_014\_v3 \S 4.1 L52"\}\\
+\hspace*{3em}- \{type: MAC, volume\_uL: 10, citation: "doc\_micro\_014\_v3 \S 4.1 L53"\}\\
+\hspace*{2em}incubation: \{temp: 35, atmosphere: "5\% CO2", duration\_h: 18,\\
+\hspace*{4em}citation: "doc\_micro\_014\_v3 \S 4.3 L60"\}\\
+\\
+post\_analytic:\\
+\hspace*{1em}reporting:\\
+\hspace*{2em}cfu\_threshold: \{value: 100000, units: CFU\_per\_mL,\\
+\hspace*{4em}citation: "doc\_micro\_014\_v3 \S 6.1 L88"\}\\
+\\
+related\_story\_acs:\,\,\,\,\,\,\,\#\, back-references to Stories that consume this profile\\
+\hspace*{1em}- STORY-MICRO-1042\#AC-2\,\,\,\#\, Configurable rejection rules engine\\
+\hspace*{1em}- STORY-MICRO-1077\#AC-1\,\,\,\#\, Centrifugation step}
+
+\subsection{How a Story's AC references the profile}
+
+A \texttt{configuration-instance} Story's AC carries the citation; the profile is what gets read by code. Example --- \texttt{STORY-MICRO-1077}:
+
+\noindent\texttt{\scriptsize acceptance\_criteria:\\
+\hspace*{1em}- when: "urine profile loaded"\\
+\hspace*{2em}then: "centrifuge step uses cultures/urine.yaml\#analytic.centrifugation"\\
+\hspace*{2em}expected\_value: "speed=1500g, duration=5min, temp=4degC"}
+
+\subsection{Where to put a value: Story body vs.\ profile}
+
+\begin{tabularx}{\textwidth}{@{}p{6.5cm}X@{}}
+\toprule
+\textbf{If the value is\ldots} & \textbf{Put it in\ldots} \\
+\midrule
+The same across cultures and parameterizable in the rules engine & Story body as parameter spec (capability shape) \\
+Different per culture / per lab & YAML profile (configuration-instance shape) \\
+A literal constant in the rejection logic & Profile, with the Story's AC pointing at it \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{Cross-cutting}
+% =====================================================================
+
+KMS encryption at rest and in transit; IAM least-privilege with VPC endpoints (Bedrock calls stay in-VPC); DLQ for parse / OCR / embed failures; CloudWatch metrics and alarms (e.g.\ OCR fail-rate $> 5\%$); CloudTrail audit log on every API call; idempotent ingestion via content-hash dedupe.
 
 \textbf{Generalization:} when Histology arrives, the same agents and the same retrieval substrate run --- only the exemplar corpus and config priors get extended. No model retraining.
 
