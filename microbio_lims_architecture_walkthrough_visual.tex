@@ -1,0 +1,366 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[margin=0.7in]{geometry}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage{tikz}
+\usepackage{float}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
+\setlength{\parskip}{4pt}
+\setlist[itemize]{leftmargin=1.1em,topsep=1pt,itemsep=1pt,parsep=0pt}
+\setlist[enumerate]{leftmargin=1.3em,topsep=1pt,itemsep=1pt,parsep=0pt}
+
+\titleformat{\section}{\large\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{8pt}{2pt}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{4pt}{1pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Microbiology LIMS POC --- v3.1 (visual)}
+\lhead{\small Process Reference + Block Diagrams}
+\rfoot{\small \thepage}
+
+% palette mirrors the drawio
+\definecolor{srcfill}{HTML}{DAE8FC}
+\definecolor{srcdraw}{HTML}{6C8EBF}
+\definecolor{cmpfill}{HTML}{F5F5F5}
+\definecolor{cmpdraw}{HTML}{666666}
+\definecolor{aifill}{HTML}{E1D5E7}
+\definecolor{aidraw}{HTML}{9673A6}
+\definecolor{outfill}{HTML}{D5E8D4}
+\definecolor{outdraw}{HTML}{82B366}
+\definecolor{valfill}{HTML}{FFF2CC}
+\definecolor{valdraw}{HTML}{D6B656}
+\definecolor{xfill}{HTML}{FFE6CC}
+\definecolor{xdraw}{HTML}{D79B00}
+\definecolor{notefill}{HTML}{FAFAFA}
+
+\tikzset{
+  blk/.style={rectangle, rounded corners=2pt, line width=0.5pt, align=center, font=\scriptsize, inner sep=3pt, minimum height=0.85cm},
+  src/.style={blk, draw=srcdraw, fill=srcfill, minimum width=1.95cm},
+  cmp/.style={blk, draw=cmpdraw, fill=cmpfill, minimum width=1.95cm},
+  ai/.style={blk, draw=aidraw, fill=aifill, minimum width=1.95cm},
+  dst/.style={blk, draw=outdraw, fill=outfill, minimum width=1.95cm},
+  val/.style={blk, draw=valdraw, fill=valfill, minimum width=1.95cm},
+  xcut/.style={blk, draw=xdraw, fill=xfill, minimum width=1.95cm},
+  decision/.style={diamond, aspect=2.2, draw=valdraw, fill=valfill, line width=0.5pt, align=center, font=\scriptsize, inner sep=1pt},
+  io/.style={rectangle, draw=cmpdraw, dashed, fill=notefill, align=left, font=\tiny\ttfamily, line width=0.3pt, inner sep=3pt},
+  lab/.style={font=\tiny\itshape, text=black!60},
+  arr/.style={->, >={Stealth[length=4pt]}, line width=0.5pt, draw=black!70},
+  arrdash/.style={->, >={Stealth[length=4pt]}, line width=0.5pt, draw=xdraw, dashed},
+}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Microbiology LIMS POC --- Process Reference (with Block Diagrams)}\\[2pt]
+{\small Visual companion to \texttt{microbio\_lims\_architecture.drawio} \quad\textbar\quad 2026-04-29}
+\end{center}
+
+\section{What the system does}
+
+An SME drops microbiology SOPs into S3. An agent pipeline, grounded in a hybrid retrieval substrate (BM25 + dense), reads them and emits two artifacts: \textbf{(A)} Jira-ready Epic/Story tree and \textbf{(B)} per-culture YAML configuration profiles (urine, blood, target-pathogen). The Cyto Jira backlog is a \emph{teaching corpus} (few-shot exemplars), not a registry. The agent stops at Story --- Tasks are dev-authored.
+
+\textbf{Color legend:} \tikz[baseline=-0.5ex]\node[src,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{src};\, source/data \quad
+\tikz[baseline=-0.5ex]\node[cmp,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{cmp};\, compute \quad
+\tikz[baseline=-0.5ex]\node[ai,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{ai};\, AI/LLM agent \quad
+\tikz[baseline=-0.5ex]\node[val,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{val};\, validator/decision \quad
+\tikz[baseline=-0.5ex]\node[dst,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{store};\, storage/output \quad
+\tikz[baseline=-0.5ex]\node[xcut,minimum width=0.7cm,minimum height=0.4cm,inner sep=1pt,font=\tiny]{xc};\, cross-cutting
+
+% =====================================================================
+\section{Agent pipeline --- 5 agents, Validator gates twice}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.35cm and 0.4cm]
+  \node[src] (sop) {\textbf{SOP cohort}\\\tiny urine, blood,\\\tiny target-pathogen};
+  \node[ai, right=of sop] (epic) {\textbf{1. Epic}\\\textbf{Extractor}\\\tiny Bedrock Claude};
+  \node[ai, right=of epic] (story) {\textbf{2. Story}\\\textbf{Extractor}\\\tiny per-SOP, 4 shapes};
+  \node[val, right=of story] (val1) {\textbf{3a. Validator}\\\textbf{gate \#1}\\\tiny shape-aware};
+  \node[ai, right=of val1] (synth) {\textbf{4. Cross-SOP}\\\textbf{Synthesis}\\\tiny $\geq$2 distinct SOPs};
+  \node[val, right=of synth] (val2) {\textbf{3b. Validator}\\\textbf{gate \#2}\\\tiny capability rubric};
+  \node[dst, right=of val2] (deps) {\textbf{5. Dep.}\\\textbf{Resolver}\\\tiny final pass};
+
+  \draw[arr] (sop) -- (epic);
+  \draw[arr] (epic) -- (story);
+  \draw[arr] (story) -- (val1);
+  \draw[arr] (val1) -- (synth);
+  \draw[arr] (synth) -- (val2);
+  \draw[arr] (val2) -- (deps);
+
+  % batch wait annotation
+  \node[lab, below=0.05cm of val1] (bw) {batch wait};
+  \draw[->, dashed, draw=cmpdraw, line width=0.3pt] (val1.south) ++(0,-0.05) -- ++(0,-0.20) -| (synth.south);
+
+  % outputs
+  \node[dst, below=1.1cm of synth] (jira) {\textbf{Output A}\\Jira artifacts\\\tiny Epics + Stories};
+  \node[dst, below=1.1cm of val2] (yaml) {\textbf{Output B}\\YAML profiles\\\tiny urine / blood / pathogen};
+  \draw[arr] (deps.south) |- (yaml.east);
+  \draw[arr] (deps.south) |- (jira.east);
+
+  % validator-link annotation
+  \draw[<->, dashed, draw=valdraw, line width=0.3pt]
+    (val1.north) ++(0,0.05) -- ++(0,0.30) -| (val2.north);
+  \node[lab, above=0.32cm of synth] {same Validator agent, two call sites};
+\end{tikzpicture}
+\end{figure}
+
+\textbf{What each box does and emits:}
+
+\begin{enumerate}
+  \item \textbf{Epic Extractor} --- identifies capability domains. \emph{Out:} \texttt{\{id, title, discipline, themes[], cyto\_epic\_analog?\}}.
+  \item \textbf{Story Extractor} --- per-SOP, multi-shape. Each Story declares its \texttt{shape} for downstream routing.
+  \item \textbf{Validator gate \#1} --- shape verification + shape-specific sub-rubric. Two revisions then SME-escalate.
+  \item \textbf{Cross-SOP Synthesis} --- runs after gate \#1 clears the entire batch. Behavioral-similarity clustering over (title + AC + source excerpt); a cluster qualifies only if its members come from $\geq 2$ \emph{distinct} SOPs. Lifts a capability Story per cluster, with \texttt{cross\_links[]} back to the contributing concretes.
+  \item \textbf{Validator gate \#2} --- same agent as 3a; capability rubric only. Synthesized stories are a \emph{new} artifact, not a derivative, so they re-pass the bar.
+  \item \textbf{Dependency Resolver} --- story$\leftrightarrow$story dependencies, stage-split sibling links, capability$\leftrightarrow$child links. Finalizes the artifact graph for Jira push.
+\end{enumerate}
+
+% =====================================================================
+\section{Four story shapes --- per-SOP extraction replicates the Cyto mix}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.3cm]
+  \node[blk, draw=outdraw, fill=outfill, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (s1)
+    {\textbf{CAPABILITY}\\\tiny\itshape configurable feature\\[2pt]
+     \tiny\textbf{Title:} Specimen Rejection Rules Engine\\
+     \tiny\textbf{AC:} System SHALL allow rule definition with \{predicate, threshold, action\}.\\
+     \tiny\textbf{Rubric:} MUST/SHALL + testable.};
+  \node[blk, draw=srcdraw, fill=srcfill, right=of s1, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (s2)
+    {\textbf{WORKFLOW-STAGE-SPLIT}\\\tiny\itshape one capability, by stage\\[2pt]
+     \tiny\textbf{Sibling titles:}\\
+     \tiny PHI Update Before Work Has Started\\
+     \tiny PHI Update After Work Has Started\\
+     \tiny PHI Update After Results Reported\\
+     \tiny\textbf{Rubric:} stage in title + cross-links.};
+  \node[blk, draw=valdraw, fill=valfill, right=of s2, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (s3)
+    {\textbf{CONFIGURATION-INSTANCE}\\\tiny\itshape concrete data values\\[2pt]
+     \tiny\textbf{Title:} Urine centrifugation params\\
+     \tiny\textbf{Values:} \{speed: 1500\,g, duration: 5\,min, temp: 4\,$^\circ$C\}\\
+     \tiny\textbf{Rubric:} typed values + verbatim SOP citation. \emph{No MUST/SHALL.}};
+  \node[blk, draw=xdraw, fill=xfill, below=0.4cm of s2, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (s4)
+    {\textbf{CLEANUP / CORRECTION}\\\tiny\itshape modify/remove existing artifact\\[2pt]
+     \tiny\textbf{Title:} Remove Result Bucket option from Add/Modify QT code screens\\
+     \tiny\textbf{Rubric:} target artifact named, before/after observable, regression risk acknowledged.};
+\end{tikzpicture}
+\end{figure}
+
+\textbf{Story schema (shape drives Validator routing):}
+
+\noindent\texttt{\scriptsize \{ id, epic\_id, title, description,\\
+\hspace*{1em}shape $\in$ \{capability, workflow-stage-split, configuration-instance, cleanup\},\\
+\hspace*{1em}acceptance\_criteria[\,], source\_citations[\,], dependencies[\,], cross\_links[\,],\\
+\hspace*{1em}estimated\_complexity $\in$ \{S, M, L\}, source\_chunks[\,] \}}
+
+% =====================================================================
+\section{Cross-SOP synthesis --- recurrence becomes capability}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.4cm]
+  \node[val] (sop1) {\textbf{Urine SOP}\\\tiny ``reject if turbid''};
+  \node[val, below=of sop1] (sop2) {\textbf{Blood SOP}\\\tiny ``reject if hemolyzed''};
+  \node[val, below=of sop2] (sop3) {\textbf{Pathogen SOP}\\\tiny ``reject if container wrong''};
+
+  \node[ai, right=2.2cm of sop2, minimum width=3.6cm, minimum height=2.0cm, align=center] (cluster)
+    {\textbf{Behavioral cluster}\\\scriptsize over (title + AC + excerpt)\\[2pt]
+     \tiny\itshape qualifies iff\\\tiny\itshape members $\in \geq 2$ distinct SOPs};
+
+  \node[dst, right=of cluster, minimum width=4.0cm, minimum height=2.4cm, align=left, text width=3.7cm] (cap)
+    {\textbf{Capability Story (synthesized)}\\\tiny\itshape passes Validator gate \#2\\[2pt]
+     \tiny\textbf{Title:} Configurable specimen rejection rules engine\\
+     \tiny\textbf{AC:} System SHALL allow rule \{predicate, threshold, action\}; per-culture profile; rejection record emitted.\\
+     \tiny\textbf{cross\_links:} urine\#$T$, blood\#$H$, pathogen\#$C$};
+
+  \draw[arr] (sop1.east) -- (cluster.west);
+  \draw[arr] (sop2.east) -- (cluster.west);
+  \draw[arr] (sop3.east) -- (cluster.west);
+  \draw[arr, line width=0.7pt] (cluster.east) -- (cap.west);
+
+  \node[lab, below=0.05cm of cluster] {concretes are kept; capability added as sibling};
+\end{tikzpicture}
+\end{figure}
+
+% =====================================================================
+\section{Ingestion substrate --- S3 to indexed chunks}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.32cm]
+  \node[src] (s3in) {\textbf{S3}\\\tiny SOP / call script /\\\tiny transcript / Jira CSV};
+  \node[cmp, right=of s3in] (sqs) {\textbf{SQS}\\\tiny PutObject event\\\tiny DLQ on retry};
+  \node[cmp, right=of sqs] (parse) {\textbf{Parse}\\\tiny PDF/OCR/DOCX/\\\tiny TXT/VTT/CSV};
+  \node[ai, right=of parse] (doc) {\textbf{Doc Process}\\\tiny Haiku-assisted\\\tiny type, version, sections};
+  \node[cmp, right=of doc] (chunk) {\textbf{Chunk}\\\tiny structure-aware\\\tiny $\sim$150/SOP};
+  \node[ai, below=0.55cm of doc] (enrich) {\textbf{Enrich}\\\tiny NER (organisms/drugs)\\\tiny UMLS codes, PHI, themes G1--G8};
+  \node[ai, left=of enrich] (embed) {\textbf{Embed}\\\tiny Titan v2 dense\\\tiny + BM25 sparse};
+  \node[dst, left=of embed] (store) {\textbf{Store}\\\tiny OpenSearch k-NN/BM25\\\tiny DynamoDB metadata\\\tiny S3 originals};
+
+  \draw[arr] (s3in) -- (sqs);
+  \draw[arr] (sqs) -- (parse);
+  \draw[arr] (parse) -- (doc);
+  \draw[arr] (doc) -- (chunk);
+  \draw[arr] (chunk.south) |- (enrich.east);
+  \draw[arr] (enrich) -- (embed);
+  \draw[arr] (embed) -- (store);
+\end{tikzpicture}
+\end{figure}
+
+\textbf{I/O trace --- one document through the pipeline} (\texttt{SOP-MICRO-014\_Gram-Stain\_v3.docx}):
+
+\begin{tikzpicture}[node distance=0.15cm]
+  \node[io, text width=5.4cm] (i1) {\textbf{[parse out]}\\
+text: 28{,}420 chars / 18 pages\\
+format: docx\\
+ocr\_used: false, parse\_ms: 320};
+  \node[io, right=of i1, text width=5.4cm] (i2) {\textbf{[doc process out]}\\
+doc\_id: doc\_micro\_014\_v3\_abc12\\
+discipline: Microbiology, version: v3\\
+section\_map: \{Purpose:[200,450], Procedure:[721,2400], AC:[2401,3100], QC:[3101,3650]\}};
+  \node[io, right=of i2, text width=5.4cm] (i3) {\textbf{[enrich dst, chunk\_001]}\\
+entities: \{organisms:["Gram-positive cocci"], specimens:["sputum"], codes:["87209"]\}\\
+phi\_detected: false\\
+themes: \{G2: 0.84, G5: 0.41\}};
+\end{tikzpicture}
+
+\begin{tikzpicture}[node distance=0.15cm]
+  \node[io, text width=8.3cm] (i4) {\textbf{[embed dst, chunk\_001]}\\
+dense\_vector: [0.0234, -0.1849, ..., 0.2891]\, (1024-d, Bedrock Titan v2)\\
+bm25\_tokens\_enriched: ["slide","preparation","87209","smear","primary","source",...]};
+  \node[io, right=of i4, text width=8.3cm] (i5) {\textbf{[store, sinks written]}\\
+PUT chunk\_001 $\rightarrow$ OpenSearch k-NN index (vector)\\
+PUT chunk\_001 $\rightarrow$ OpenSearch BM25 index (sparse)\\
+PUT chunk\_001 $\rightarrow$ DynamoDB \texttt{chunk\_metadata} (entities, themes, phi\_status, version)};
+\end{tikzpicture}
+
+% =====================================================================
+\section{Retrieval substrate --- per query, real-time}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.32cm]
+  \node[src] (q) {\textbf{Query}\\\tiny + session state\\\tiny + 8 theme centroids};
+  \node[cmp, right=of q] (pre) {\textbf{Pre-process}\\\tiny normalize\\\tiny ref extraction};
+  \node[ai, right=of pre] (intent) {\textbf{Intent decode}\\\tiny centroid sim +\\\tiny Haiku classifier};
+  \node[decision, right=0.5cm of intent] (dec) {\scriptsize conf\,$\geq\tau$?};
+  \node[ai, right=0.5cm of dec] (exp) {\textbf{Expand}\\\tiny paraphrase +\\\tiny UMLS synonyms};
+  \node[xcut, above=0.4cm of dec] (clar) {\textbf{Clarify}\\\tiny structured Q,\\\tiny loop back};
+  \node[xcut, below=0.4cm of dec] (sess) {\textbf{Session-only}\\\tiny recall / edit};
+
+  \node[dst, below=0.7cm of pre, minimum width=10.5cm, minimum height=1.2cm, align=center] (slots)
+    {\textbf{Multi-slot hybrid retrieval} (BM25 + Dense $\rightarrow$ RRF fusion, per slot)\\[2pt]
+     \scriptsize PRIMARY (Micro/active) \,$|$\, ANALOGY (Cyto) \,$|$\, ADJACENT (centroid neighbors) \,$|$\, EXEMPLAR (Jira, cond.) \,$|$\, REG (regulatory, cond.)};
+  \node[ai, below=0.32cm of slots] (rer) {\textbf{Rerank}\\\tiny cross-encoder per slot\\\tiny low-score gate ($\theta$=0.5)};
+  \node[cmp, right=of rer] (asm) {\textbf{Assemble}\\\tiny dedupe, token trim,\\\tiny role-labeled context};
+  \node[ai, right=of asm] (gen) {\textbf{Generate}\\\tiny Bedrock Claude\\\tiny structured JSON + cites};
+
+  \draw[arr] (q) -- (pre);
+  \draw[arr] (pre) -- (intent);
+  \draw[arr] (intent) -- (dec);
+  \draw[arr] (dec) -- node[lab, above]{proceed} (exp);
+  \draw[arrdash] (dec) -- node[lab, right]{conf\,$<\tau$} (clar);
+  \draw[arrdash] (dec) -- node[lab, right]{recall/edit} (sess);
+  \draw[arr] (exp.south) |- (slots.east);
+  \draw[arr] (slots) -- (rer);
+  \draw[arr] (rer) -- (asm);
+  \draw[arr] (asm) -- (gen);
+\end{tikzpicture}
+\end{figure}
+
+\textbf{I/O trace --- one query: ``Generate epics for specimen rejection in microbiology''}
+
+\begin{tikzpicture}[node distance=0.15cm]
+  \node[io, text width=8.3cm] (q1) {\textbf{[intent decode out]}\\
+centroid\_dist: \{G1: 0.81, G5: 0.18\}\\
+classifier: \{action: generate, themes: [G1, G5], discipline: Micro, granularity: epic, refs: [], conf: 0.91\}\\
+decision: PROCEED\, ($\tau$=0.7, $0.91 \geq \tau$)};
+  \node[io, right=of q1, text width=8.3cm] (q2) {\textbf{[retrieve out]} 48 candidate chunks\\
+\quad slot\_1 PRIMARY (Micro/G1+G5):\, 20\\
+\quad slot\_2 ANALOGY (Cyto/G1+G5):\, 10\\
+\quad slot\_3 ADJACENT (Micro/G2 neighbors):\, 10\\
+\quad slot\_4 EXEMPLAR (Jira, generate$\wedge$epic):\, 5\\
+\quad slot\_5 REG (CLSI on G5):\, 3};
+\end{tikzpicture}
+
+\begin{tikzpicture}[node distance=0.15cm]
+  \node[io, text width=8.3cm] (q3) {\textbf{[rerank + assemble out]}\\
+trim: 8/4/3/3/2 = 20 chunks (all slots\,$\geq\theta$=0.5)\\
+prompt sections: PRIMARY, ANALOGY, ADJACENT, EXEMPLAR, REG\\
++ session drafts + output schema\\
+total tokens: 6{,}840};
+  \node[io, right=of q3, text width=8.3cm] (q4) {\textbf{[generate out]} structured JSON\\
+\{ epic\_id: epic\_draft\_3,\\
+\quad title: "Specimen Rejection Workflow",\\
+\quad theme: G1,\\
+\quad citations: ["s3://.../SOP-MICRO-007 \S AC",\\
+\quad\quad\quad\quad\quad\quad "s3://.../SOP-CYTO-021 \S Procedure",\\
+\quad\quad\quad\quad\quad\quad "CLSI M22 \S 3.4"],\\
+\quad stories: ["Validate transport temp", ...] \}};
+\end{tikzpicture}
+
+% =====================================================================
+\section{Validator --- shape-aware revise/escalate flow}
+% =====================================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.45cm]
+  \node[src] (in) {Story\\input};
+  \node[val, right=of in] (v) {\textbf{Validator}\\\tiny verify shape\\\tiny + sub-rubric};
+  \node[decision, right=of v] (p) {\scriptsize pass?};
+  \node[dst, right=of p] (acc) {\textbf{ACCEPT}};
+  \node[xcut, below=0.35cm of p] (rev) {\textbf{Revise}\\\tiny return failed checks\\\tiny ($\leq$ 2 attempts)};
+  \node[blk, draw=red!70!black, fill=red!10, right=of rev] (esc) {\textbf{SME escalate}\\\tiny after 2 failed attempts};
+
+  \draw[arr] (in) -- (v);
+  \draw[arr] (v) -- (p);
+  \draw[arr] (p) -- node[lab, above]{yes} (acc);
+  \draw[arrdash] (p) -- node[lab, right]{no} (rev);
+  \draw[arrdash] (rev) -| (v);
+  \draw[arr, draw=red!70!black] (rev) -- node[lab, above, text=red!70!black]{exhausted} (esc);
+\end{tikzpicture}
+\end{figure}
+
+\textbf{Sub-rubrics by shape (cheat sheet):}
+\begin{itemize}
+  \item \textbf{Capability:} MUST/SHALL; testable AC; no ambiguous quantifiers; configurability boundaries; SOP citation; complexity S/M/L; edge cases enumerated.
+  \item \textbf{Stage-split:} stage explicit in title; entry/exit observable; siblings enumerated and cross-linked; transition contract; boundary cases.
+  \item \textbf{Configuration-instance:} typed concrete values; target table/profile named; SOP excerpt verbatim; scope (culture/lab) stated. \emph{MUST/SHALL not required.}
+  \item \textbf{Cleanup:} target artifact named (id, screen path, file path); before/after observable; regression risk acknowledged; DoD includes smoke test. \emph{MUST/SHALL not required.}
+\end{itemize}
+
+% =====================================================================
+\section{What ships + cross-cutting}
+% =====================================================================
+
+\begin{itemize}
+  \item \textbf{Output A --- Jira artifacts.} Epics (with optional \texttt{cyto\_epic\_analog}), per-SOP concrete Stories in 4 shapes, synthesized capability Stories cross-linked to children, dependency edges between them.
+  \item \textbf{Output B --- Per-culture YAML profile.} One per culture in scope; values typed (units / enums / nullable rules); SOP excerpt cited inline; \texttt{related\_story\_ac} links to Story for traceability.
+\end{itemize}
+
+\textbf{Example YAML excerpt} (\texttt{cultures/urine.yaml}):
+
+\noindent\texttt{\scriptsize centrifugation:\\
+\hspace*{1em}speed:\ \ \ \{value: 1500, units: g\}\ \ \ \# cite: SOP-MICRO-014 \S 3.2 L41--43\\
+\hspace*{1em}duration: \{value: 5,\ \ \ units: min\}\ \# cite: SOP-MICRO-014 \S 3.2 L44\\
+\hspace*{1em}temp:\ \ \ \ \{value: 4,\ \ \ units: degC\} \# cite: SOP-MICRO-014 \S 3.2 L45\\
+related\_story\_ac: STORY-1042\#AC-2}
+
+\textbf{Cross-cutting:} KMS encryption (rest + transit); IAM least-privilege + VPC endpoints (Bedrock calls stay in-VPC); DLQ for parse/OCR/embed failures; CloudWatch metrics + alarms (e.g.\ OCR fail-rate $> 5\%$); CloudTrail audit log; idempotent ingestion via content-hash dedupe.
+
+\textbf{Generalization:} when Histology arrives, the same agents and the same retrieval substrate run --- only the exemplar corpus and config priors get extended. No model retraining.
+
+\end{document}
