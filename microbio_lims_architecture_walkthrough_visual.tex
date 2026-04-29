@@ -139,7 +139,7 @@ Batch wait & The pipeline pause between Validator gate \#1 and Cross-SOP Synthes
   \item \textbf{Story Extractor} --- per-SOP, multi-shape. Different elements of one SOP can take different shapes.
   \item \textbf{Validator gate \#1} --- shape verification + shape-specific sub-rubric. Two revisions then SME-escalate.
   \item \textbf{Cross-SOP Synthesis} --- runs after gate \#1 clears the entire batch. Behavioral-similarity clustering over (title + AC + source excerpt); cluster qualifies only if its members come from $\geq 2$ \emph{distinct} SOPs. Lifts a capability Story per cluster, with \texttt{cross\_links[]} back to the contributing concretes.
-  \item \textbf{Validator gate \#2} --- same agent as 3a; capability rubric only. Synthesized stories are a \emph{new} artifact, not a derivative, so they re-pass the bar.
+  \item \textbf{Validator gate \#2} --- same Validator agent as gate \#1, second call site; capability rubric only. Synthesized stories are a \emph{new} artifact, not a derivative, so they re-pass the bar.
   \item \textbf{Dependency Resolver} --- story$\leftrightarrow$story dependencies, stage-split sibling links, capability$\leftrightarrow$child links. Finalizes the artifact graph for Jira push.
 \end{enumerate}
 
@@ -190,6 +190,8 @@ cleanup & Modify or remove an existing artifact. \emph{No new feature.} & Target
 % =====================================================================
 \section{Schemas --- deep dive}
 % =====================================================================
+
+\textbf{Note on IDs:} draft IDs (e.g.\ \texttt{epic\_draft\_3}, \texttt{story\_draft\_42}) are used in-pipeline; the Dependency Resolver replaces them with final Jira-shaped IDs (e.g.\ \texttt{EPIC-MICRO-001}, \texttt{STORY-MICRO-1042}) at Jira-push time.
 
 \subsection{Epic schema}
 
@@ -254,7 +256,7 @@ Not persisted to Jira; lives only between gate \#1 and gate \#2 in memory.
 
 A cluster qualifies for lifting \textbf{iff} \texttt{len(unique(source\_sops)) >= 2}. Two stories from the same SOP do not qualify, even if they cluster tightly.
 
-\subsection{Validator output schema (when a Story fails)}
+\subsection{Validator output schema}
 
 \noindent\texttt{\scriptsize \{ story\_id: "STORY-MICRO-1042", verdict: "revise",\\
 \hspace*{1em}shape\_declared: "capability", shape\_verified: "capability",\\
@@ -262,6 +264,19 @@ A cluster qualifies for lifting \textbf{iff} \texttt{len(unique(source\_sops)) >
 \hspace*{2em}\{rule:"must\_shall\_present", severity:"error", message:"AC 1 lacks MUST/SHALL phrasing."\},\\
 \hspace*{2em}\{rule:"ambiguous\_quantifier", severity:"error", message:"AC 2 uses 'appropriate'."\}\\
 \hspace*{1em}], attempt: 1 \}}
+
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily}p{2.6cm}p{3.0cm}X@{}}
+\toprule
+\textbf{field} & \textbf{type} & \textbf{notes} \\
+\midrule
+story\_id & string & The Story under review.\\
+verdict & enum & \texttt{accept} (passes), \texttt{revise} (return to extractor with \texttt{failed\_checks}, attempt $<$ 2), or \texttt{escalate} (after 2 failed revisions; SME-routed).\\
+shape\_declared & enum & The shape the Story Extractor assigned.\\
+shape\_verified & enum & The shape the Validator believes is correct. If it differs from \texttt{shape\_declared}, verdict is automatically \texttt{revise}.\\
+failed\_checks[] & array $\langle$\{rule, severity, message\}$\rangle$ & Empty when \texttt{verdict = accept}.\\
+attempt & integer & 1 or 2 (after 2, verdict becomes \texttt{escalate}).\\
+\bottomrule
+\end{tabularx}
 
 % =====================================================================
 \section{Story relationships (graph view)}
@@ -488,13 +503,14 @@ prompt sections: PRIMARY, ANALOGY, ADJACENT, EXEMPLAR, REG\\
 + session drafts + output schema\\
 total tokens: 6{,}840};
   \node[io, right=of q3, text width=8.3cm] (q4) {\textbf{[generate out]} structured JSON\\
-\{ epic\_id: epic\_draft\_3,\\
+\{ id: "epic\_draft\_3",\,\,\,\#\, draft ID, replaced by\\
+\quad\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\#\, Dep.\,Resolver before Jira push\\
 \quad title: "Specimen Rejection Workflow",\\
-\quad theme: G1,\\
+\quad themes: ["G1","G5"],\\
 \quad citations: ["s3://.../SOP-MICRO-007 \S AC",\\
 \quad\quad\quad\quad\quad\quad "s3://.../SOP-CYTO-021 \S Procedure",\\
 \quad\quad\quad\quad\quad\quad "CLSI M22 \S 3.4"],\\
-\quad stories: ["Validate transport temp", ...] \}};
+\quad stories: [\{title: "Validate transport temp", ...\}, ...] \}};
 \end{tikzpicture}
 
 % =====================================================================
@@ -534,6 +550,13 @@ total tokens: 6{,}840};
 \textbf{Output A --- Jira artifacts.} The connected Epic / Story DAG (graph above), pushed to Jira via REST. The graph is what the dev team works against; the YAML profile (Output B) is what their code consumes at runtime.
 
 \textbf{Output B --- Per-culture YAML configuration profile.} One YAML file per culture in scope. Carries the concrete typed values that \texttt{configuration-instance} Stories' AC referenced. Profiles are versioned, dated, and cite back to the SOPs they draw from. \textbf{The Story body never duplicates these values} --- it references them by \texttt{related\_story\_ac}, so a single source of truth is preserved.
+
+The profile is partitioned by workflow stage so an engineer can find the right block at a glance:
+\begin{itemize}
+  \item \texttt{pre\_analytic} --- before the specimen reaches the bench: collection, transport, rejection predicates.
+  \item \texttt{analytic} --- the bench work itself: centrifugation, inoculation, incubation.
+  \item \texttt{post\_analytic} --- after the result: reporting thresholds, downstream notifications.
+\end{itemize}
 
 \subsection{Full profile structure (\texttt{cultures/urine.yaml})}
 
