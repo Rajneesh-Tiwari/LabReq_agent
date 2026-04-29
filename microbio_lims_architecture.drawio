@@ -1064,4 +1064,287 @@
     </mxGraphModel>
   </diagram>
 
+  <diagram name="v3.2 Theme Discovery" id="v32-theme-discovery">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="td_title" value="v3.2 Theme Discovery — Conditioned bootstrap for a new discipline" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1400" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="td_subtitle" value="Runs once per new discipline. Classify SOP chunks against the prior taxonomy first; cluster only the residual; SME ratifies novel themes; emit a versioned theme config." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1600" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_sec_a" value="INPUTS — what the discovery agent reads" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="95" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_in1" value="&lt;b&gt;PRIOR CATALOG&lt;/b&gt;&#10;&lt;i&gt;cyto_v1 — themes G1–G8&lt;/i&gt;&#10;&#10;• 8 named themes with descriptions&#10;• 8 centroid embeddings (one per theme)&#10;• Used as classification target in Pass 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="380" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="td_in2" value="&lt;b&gt;NEW DISCIPLINE SAMPLE&lt;/b&gt;&#10;&lt;i&gt;e.g., 15–30 representative Histo SOPs&lt;/i&gt;&#10;&#10;• Ingested through the standard pipeline (chunked, embedded)&#10;• ~600 chunks for a typical Histo bootstrap&#10;• These are the inputs being classified" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="130" width="380" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_sec_b" value="CONDITIONED DISCOVERY — 4 PASSES" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="290" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_p1" value="&lt;b&gt;PASS 1 — CLASSIFY&lt;/b&gt;&#10;&lt;i&gt;every chunk vs prior centroids&lt;/i&gt;&#10;&#10;Score each chunk against G1–G8 (cosine on centroid OR LLM-as-classifier hybrid).&#10;&#10;• score ≥ τ_match → assign to existing theme&#10;• score &amp;lt; τ_match → mark as residual&#10;&#10;&lt;b&gt;Output:&lt;/b&gt; assigned chunks per theme + residual pool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="330" width="380" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="td_p2" value="&lt;b&gt;PASS 2 — CLUSTER RESIDUAL&lt;/b&gt;&#10;&lt;i&gt;HDBSCAN over residuals only&lt;/i&gt;&#10;&#10;Cluster the residual chunks. For each cluster of size ≥ ε_novelty, summarize → candidate novel theme {description, members, evidence}.&#10;&#10;Small clusters (size &amp;lt; ε_novelty) → G0 unclassified bucket.&#10;&#10;&lt;b&gt;Output:&lt;/b&gt; novel-theme candidates + G0 noise" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="330" width="380" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="td_p3" value="&lt;b&gt;PASS 3 — SME RATIFICATION&lt;/b&gt;&#10;&lt;i&gt;gate&lt;/i&gt;&#10;&#10;Present to SME:&#10;• novel candidates (with evidence + proposed name)&#10;• G0 sample&#10;• Pass 1 assignments (skim only)&#10;&#10;SME confirms / renames / rejects each. Inherited themes pass automatically — NOT re-reviewed.&#10;&#10;&lt;b&gt;Output:&lt;/b&gt; ratified novel themes + discarded list" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="330" width="380" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="td_p4" value="&lt;b&gt;PASS 4 — RE-TAG (conditional)&lt;/b&gt;&#10;&lt;i&gt;only on catalog version bump&lt;/i&gt;&#10;&#10;If catalog changed (≥ 1 novel ratified or ≥ 1 discarded), re-run the classifier over previously-tagged corpus chunks against the new version.&#10;&#10;Update Story.themes[] and Epic.themes[] in place; preserve Story IDs.&#10;&#10;&lt;b&gt;Output:&lt;/b&gt; consistent corpus under new catalog version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="330" width="360" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_e_in1_p1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="td_in1" target="td_p1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="td_e_in2_p1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="td_in2" target="td_p1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="td_e_p1_p2" value="residual only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;fontSize=10;fontStyle=2;fontColor=#666666;" edge="1" parent="1" source="td_p1" target="td_p2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="td_e_p2_p3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="td_p2" target="td_p3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="td_e_p3_p4" value="if catalog changed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;dashed=1;fontSize=10;fontStyle=2;fontColor=#666666;" edge="1" parent="1" source="td_p3" target="td_p4"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="td_sec_c" value="OUTPUT — versioned theme config (yaml)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="595" width="900" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="td_out" value="&lt;b&gt;histo_v1.yaml&lt;/b&gt;&#10;&#10;catalog_id: histo_v1&#10;parent_catalog: cyto_v1&#10;discipline: histology&#10;sme_reviewer: &amp;lt;name&amp;gt;&#10;&#10;inherited_themes: [G1, G2, G3, G4, G5, G6, G8]                                       # 7 of 8 carry over&#10;novel_themes:    [H1 Tissue Processing, H2 Staining, H3 Block Archive, H4 Frozen]    # 4 new, SME-ratified&#10;discarded_themes: [G7 — folded into H1]                                              # mapped via ANALOGY map&#10;unclassified_bucket: { count: 22, pct_of_total: 3.7 }                                # under 5% alarm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="40" y="635" width="1620" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="td_e_p3_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="td_p3" target="td_out"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="td_sec_d" value="KNOBS &amp;amp; ALARMS — the parameters that bias the algorithm" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="840" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_k1" value="&lt;b&gt;τ_match&lt;/b&gt;  &lt;i&gt;default 0.65&lt;/i&gt;&#10;&#10;Match-confidence threshold for Pass 1.&#10;&#10;HIGH → eager to inherit (small residual; risk forced fits).&#10;LOW → broad residual (more novelty, more noise).&#10;&#10;User's stated preference: keep HIGH so we don't end up with entirely new themes." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="880" width="380" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="td_k2" value="&lt;b&gt;ε_novelty&lt;/b&gt;  &lt;i&gt;default 3&lt;/i&gt;&#10;&#10;Minimum cluster size for a novel-theme candidate in Pass 2.&#10;&#10;HIGH → conservative; novelty needs many witnesses.&#10;LOW → any small cluster gets surfaced.&#10;&#10;Together with τ_match, controls eagerness-to-reuse vs. evidence-bar-for-novelty." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="880" width="380" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="td_k3" value="&lt;b&gt;G0 ALARM&lt;/b&gt;  &lt;i&gt;threshold 5%&lt;/i&gt;&#10;&#10;If unclassified bucket exceeds 5% of input volume over a rolling window, fire alarm → re-run Theme Discovery.&#10;&#10;Promotes silent taxonomy drift to a visible signal. Replaces v3.1's implicit fallback." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="880" width="380" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="td_k4" value="&lt;b&gt;RE-RUN TRIGGERS&lt;/b&gt;&#10;&#10;• Bootstrap a new discipline (one-time)&#10;• G0 alarm trips&#10;• SME requests re-run (manual)&#10;&#10;Each re-run produces a new catalog version. Pass 4 re-tags the existing corpus to the new version." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="880" width="360" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="td_example" value="&lt;b&gt;WORKED EXAMPLE — bootstrapping Histology from cyto_v1:&lt;/b&gt; Pass 1 classifies 460 / 600 chunks into G1–G8 (residual = 140). Pass 2 finds 4 clusters above ε_novelty: H1 Tissue Processing (38), H2 Staining (32), H3 Block Archive (25), H4 Frozen Section (23); 22 chunks → G0 (3.7%, below alarm). Pass 3 SME confirms all 4; flags G7 Instrumentation as redundant in histo (folded into H1) — discarded. Pass 4 re-tags any prior histo extractions. Final histo_v1: 7 inherited / 4 novel / 1 discarded." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1100" width="1620" height="80" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="v3.2 Conditioned Epic Extractor" id="v32-conditioned-epic">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="ce_title" value="v3.2 Epic Extractor (conditioned mode) — match before generate" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1400" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_subtitle" value="v3.1 produced epics ex nihilo and annotated cyto_epic_analog post-hoc. v3.2 classifies drafts against the prior epic catalog first, clusters the residual, and SME ratifies novel epics." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1600" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_sec_a" value="v3.1 vs v3.2 — what changed inside Epic Extractor" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="95" width="1100" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_old" value="&lt;b&gt;v3.1&lt;/b&gt;&#10;&#10;1. Read SOPs.&#10;2. Propose Micro epics from scratch.&#10;3. Optionally annotate cyto_epic_analog when retrieval signal happens to align (post-hoc, brittle).&#10;&#10;&lt;i&gt;Risk: Micro epic catalog drifts from Cyto's organizing structure even when the underlying capability is identical.&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="800" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_new" value="&lt;b&gt;v3.2&lt;/b&gt;&#10;&#10;1. Read SOPs.&#10;2. Propose drafts.&#10;3. Classify drafts against prior epic catalog (cyto_epic_v1) at τ_match.&#10;4. Match → reuse epic ID, populate epic_analog by construction. Residual → cluster across SOPs (ε_novelty), SME ratifies novel.&#10;&#10;&lt;i&gt;Result: most epics inherit by construction; novelty is evidence-gated.&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="130" width="800" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_sec_b" value="v3.2 PIPELINE — match before generate" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_s1" value="&lt;b&gt;1. DRAFT EPICS&lt;/b&gt;&#10;&lt;i&gt;per SOP&lt;/i&gt;&#10;&#10;Read SOPs and propose draft epics — same as v3.1.&#10;&#10;Drafts are unverified candidates, not committed catalog entries." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="310" width="260" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_s2" value="&lt;b&gt;2. CLASSIFY vs PRIOR&lt;/b&gt;&#10;&lt;i&gt;against cyto_epic_v1&lt;/i&gt;&#10;&#10;Score each draft against existing catalog entries.&#10;&#10;Hybrid: cosine pre-filter + LLM tiebreaker.&#10;&#10;Threshold: τ_match." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="340" y="310" width="260" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_dec" value="&lt;b&gt;match?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="370" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_s3a" value="&lt;b&gt;3a. LINK &amp;amp; REUSE&lt;/b&gt;&#10;&lt;i&gt;score ≥ τ_match&lt;/i&gt;&#10;&#10;• Set epic_analog = &amp;lt;cyto_epic_id&amp;gt;&#10;• Reuse existing epic ID (don't mint a new one)&#10;• Stories from this SOP attach under the inherited epic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="270" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_s3b" value="&lt;b&gt;3b. CLUSTER RESIDUAL&lt;/b&gt;&#10;&lt;i&gt;score &amp;lt; τ_match&lt;/i&gt;&#10;&#10;Pool residual drafts across SOPs and cluster (ε_novelty).&#10;&#10;Each cluster of size ≥ ε_novelty → candidate novel epic with evidence." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="450" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_s4" value="&lt;b&gt;4. SME RATIFY NOVEL&lt;/b&gt;&#10;&lt;i&gt;gate&lt;/i&gt;&#10;&#10;SME reviews ONLY the novel candidates with cluster evidence.&#10;&#10;Inherited epics (3a) bypass review." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="370" width="240" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_s5" value="&lt;b&gt;5. EPIC CATALOG&lt;/b&gt;&#10;&lt;i&gt;micro_v1&lt;/i&gt;&#10;&#10;• inherited_epics[]&#10;• novel_epics[]&#10;• unclassified_drafts (E0)&#10;&#10;Versioned. Stories from this run carry catalog_version: micro_v1." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="370" width="260" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_s1" target="ce_s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_s2" target="ce_dec"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e3" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;fontSize=10;fontStyle=1;fontColor=#82b366;" edge="1" parent="1" source="ce_dec" target="ce_s3a"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e4" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;fontSize=10;fontStyle=1;fontColor=#6c8ebf;" edge="1" parent="1" source="ce_dec" target="ce_s3b"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_s3b" target="ce_s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e6" value="bypass review" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;endArrow=classic;endFill=1;dashed=1;fontSize=9;fontStyle=2;fontColor=#666666;" edge="1" parent="1" source="ce_s3a" target="ce_s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce_e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;endArrow=classic;endFill=1;" edge="1" parent="1" source="ce_s4" target="ce_s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="ce_sec_c" value="EPIC CATALOG schema (yaml) — prior input vs v3.2 output" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="630" width="1200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_yaml1" value="&lt;b&gt;PRIOR — cyto_epic_v1&lt;/b&gt;&#10;&#10;catalog_id: cyto_epic_v1&#10;parent_catalog: null&#10;discipline: cytology&#10;epics:&#10;  - id: EPIC-CYTO-014&#10;    title: Specimen Receiving&#10;    themes: [G1]&#10;  - id: EPIC-CYTO-022&#10;    title: PHI Update Workflow&#10;    themes: [G1, G3]&#10;  - id: EPIC-CYTO-031&#10;    title: Result Reporting&#10;    themes: [G3, G4]&#10;  ...&#10;# 40 epics total — used as Pass 1 classification target" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="40" y="670" width="800" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="ce_yaml2" value="&lt;b&gt;OUTPUT — micro_v1&lt;/b&gt;&#10;&#10;catalog_id: micro_v1&#10;parent_catalog: cyto_epic_v1&#10;discipline: microbiology&#10;inherited_epics:&#10;  - id: EPIC-MICRO-001&#10;    title: Specimen Receiving&#10;    epic_analog: { catalog_id: cyto_epic_v1, epic_id: EPIC-CYTO-014, equivalence: identical }&#10;    inheritance_basis: { match_score: 0.78, sme_confirmed: true }&#10;novel_epics:&#10;  - id: EPIC-MICRO-007&#10;    title: Antibiotic Susceptibility Testing (AST)&#10;    epic_analog: null&#10;    novelty_basis: { n_draft_epics: 4, sme_confirmed: true }&#10;unclassified_drafts: { count: 3, pct_of_total: 4.1 }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="860" y="670" width="800" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ce_note" value="&lt;b&gt;Why this matters:&lt;/b&gt; in v3.1 the Micro epic catalog grew freely and cyto_epic_analog was an afterthought. In v3.2 the Micro catalog inherits Cyto's organizing structure by construction — most Micro epics map to a Cyto analog with explicit match score, and only genuinely-novel Micro epics (e.g., AST) need SME ratification. The dev team reading the output sees what's reused vs. new without having to do that mapping themselves." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=10;align=left;verticalAlign=top;fontStyle=2;spacingLeft=10;spacingTop=10;spacingRight=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="970" width="1620" height="80" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="v3.2 ANALOGY Map" id="v32-analogy-map">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="am_title" value="v3.2 ANALOGY Map — explicit cross-discipline links" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1400" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="am_subtitle" value="Replaces v3.1's implicit shared theme space. Each link is typed: identical / partial / discarded_in_target / novel_in_target. Drives ANALOGY retrieval-slot filtering at query time." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="40" y="55" width="1600" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_col1" value="cyto_v1 (themes G1–G8)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="am_col2" value="histo_v1 (after Theme Discovery)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="100" width="280" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_c_g1" value="G1 Pre-Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g2" value="G2 Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="210" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g3" value="G3 Post-Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="270" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g4" value="G4 Reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="330" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g5" value="G5 QC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g6" value="G6 Compliance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="450" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g7" value="G7 Instrumentation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#b85450;fontSize=11;align=center;verticalAlign=middle;dashed=1;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="510" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_c_g8" value="G8 Platform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="570" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_h_g1" value="G1 Pre-Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="150" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g2" value="G2 Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="210" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g3" value="G3 Post-Analytic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="270" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g4" value="G4 Reporting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="330" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g5" value="G5 QC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="390" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g6" value="G6 Compliance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="450" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_g8" value="G8 Platform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="850" y="510" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_h1" value="★ H1 Tissue Processing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="570" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_h2" value="★ H2 Staining" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="630" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_h3" value="★ H3 Block Archive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="690" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_h_h4" value="★ H4 Frozen Section" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="750" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_e_g1" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g1" target="am_h_g1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g2" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g2" target="am_h_g2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g3" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g3" target="am_h_g3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g4" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g4" target="am_h_g4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g5" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g5" target="am_h_g5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g6" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g6" target="am_h_g6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g7_h1" value="partial" style="endArrow=classic;html=1;strokeColor=#d79b00;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;fontStyle=2;fontColor=#d79b00;" edge="1" parent="1" source="am_c_g7" target="am_h_h1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="am_e_g8" style="endArrow=none;html=1;strokeColor=#82b366;strokeWidth=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="am_c_g8" target="am_h_g8"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="am_g7_discard" value="✗ discarded — folded into H1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="290" y="510" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="am_novel_marker" value="★ novel in target — emerged from Pass 2 cluster, SME-ratified" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="660" width="240" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_legend_title" value="LEGEND" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="100" width="200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="am_legend_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="125" width="320" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="am_l1" value="——— identical (full equivalence)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="135" width="290" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="am_l2" value="– – – partial (loose / scope diff)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="170" width="290" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="am_l3" value="✗  discarded_in_target" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="205" width="290" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="am_l4" value="★  novel_in_target (no source)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="240" width="290" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="am_l5" value="τ_match drives the &quot;identical&quot; vs &quot;partial&quot; cutoff. SME confirms each non-identical link in Pass 3." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="280" width="290" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="am_sec_b" value="ANALOGY map artifact (yaml) — derived from theme + epic catalogs" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="830" width="1200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="am_yaml" value="source_catalog: cyto_v1&#10;target_catalog: histo_v1&#10;&#10;theme_links:&#10;  - { source: G1, target: G1, equivalence: identical }&#10;  - { source: G2, target: G2, equivalence: identical }&#10;  # ... G3–G6, G8 all identical&#10;  - { source: G7, target: H1, equivalence: partial,  note: &quot;Cyto Instrumentation maps loosely to Histo Tissue Processing for slide-prep instruments&quot; }&#10;  - { source: G7, target: null, equivalence: discarded_in_target }&#10;  - { source: null, target: H1, equivalence: novel_in_target }&#10;  - { source: null, target: H2, equivalence: novel_in_target }&#10;  - { source: null, target: H3, equivalence: novel_in_target }&#10;  - { source: null, target: H4, equivalence: novel_in_target }&#10;&#10;epic_links:&#10;  - { source: EPIC-CYTO-014, target: EPIC-HISTO-002, equivalence: identical }       # Specimen Receiving&#10;  - { source: EPIC-CYTO-031, target: EPIC-HISTO-007, equivalence: identical }       # Result Reporting&#10;  - { source: null,           target: EPIC-HISTO-012, equivalence: novel_in_target } # Frozen-Section Workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#d6b656;fontSize=10;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;spacingRight=12;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="40" y="870" width="1620" height="220" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
 </mxfile>

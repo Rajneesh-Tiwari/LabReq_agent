@@ -41,19 +41,24 @@ Pending decisions or items awaiting stakeholder confirmation. Resolved items mov
 ## Smaller architectural inconsistencies (from earlier QC pass)
 
 - [ ] Slot 2 (Cyto analogy) when multiple older disciplines exist (Cyto + Histo) — split into 2a/2b or merge?
-- [ ] Theme `unclassified` chunks — currently orphaned at retrieval; need admin review path or absorb into adjacent slot.
+- [ ] Theme `unclassified` chunks — currently orphaned at retrieval; need admin review path or absorb into adjacent slot. *(Subsumed by the G0/E0 first-class promotion in `V3_2_SPEC.md` § 5.6 / D19 — review path becomes the Discovery Agent re-run triggered by the 5% alarm.)*
 - [ ] Co-reference resolver — needs to know what type of artifact "epic 3" refers to (draft vs in-corpus epic).
 
 ## Larger architectural questions for v3.2 / v4
+
+> **Status:** Three of the four questions below now have a draft answer in `V3_2_SPEC.md` (Conditioned Discovery — warm-start theme/epic bootstrap with prior). The questions remain *open* until the spec is ratified and the τ_match / ε_novelty defaults are calibrated against a real run, but they are no longer un-answered.
 
 - [ ] **Theme cold-start for new disciplines.** v3.1 assumes themes G1–G8 are known upfront. They're load-bearing across the theme tagger, 8 precomputed centroid embeddings, intent-decode classifier (closed enum), ADJACENT retrieval slot ("centroid neighbors"), and the Epic schema. For Micro this is fine — Cyto's taxonomy bootstraps it. For a brand-new discipline (Histology, Hematology, Chemistry) without prior taxonomy, there's nothing to retrieve into and no labels for the classifier. Options for v3.2/v4:
   - **(A) Theme-discovery agent** that runs once per discipline before the main pipeline: read N representative SOPs → cluster → propose taxonomy → SME confirmation → emit theme config. Pipeline boots from that config. Recommended.
   - **(B) Layered themes** — keep G1–G3 (workflow stages: pre/analytic/post) as universal, replace G4–G8 with discipline-specific. Cleaner because workflow stages really are universal.
   - **(C) Themes-from-data** — cluster the corpus, label clusters post-hoc. Adaptive but unstable; Story.themes[] becomes a moving target.
   - Whichever path, themes should become **config-as-data with a versioned taxonomy**, not a closed enum baked into schemas.
+  - **→ Addressed in `V3_2_SPEC.md` (§§ 4–5):** option A is taken with a conditioning twist — the discovery is *warm-start* against the existing prior catalog rather than pure cold-start, governed by τ_match / ε_novelty knobs. Versioned config-as-data is adopted (D18). Open: τ_match / ε_novelty calibration on a real run; Pass-1 scoring backend (cosine vs LLM-as-classifier vs hybrid).
 - [ ] **Unclassified bucket as first-class concept.** Today it's an implicit fallback for low-confidence theme tagging. It's also doing unspoken work as the safety valve when the taxonomy doesn't match reality. Should be promoted to G0 with an alarm threshold (e.g., >5% chunk volume triggers SME review).
-- [ ] **Story DAG materialization.** The Story schema's `dependencies[]` and `cross_links[]` arrays already serialize a DAG, but it lives only as flat arrays. Worth deciding: do we surface this as a Jira link graph, persist it in a graph DB / join table, or just leave it implicit? Affects how Dependency Resolver's topological ordering is exposed for sprint planning.
+  - **→ Addressed in `V3_2_SPEC.md` (§ 5.6, D19):** G0 (theme) and E0 (epic) promoted to first-class with an explicit count + sample + 5% alarm threshold; alarm tripping re-runs the appropriate Discovery Agent.
+- [ ] **Story DAG materialization.** The Story schema's `dependencies[]` and `cross_links[]` arrays already serialize a DAG, but it lives only as flat arrays. Worth deciding: do we surface this as a Jira link graph, persist it in a graph DB / join table, or just leave it implicit? Affects how Dependency Resolver's topological ordering is exposed for sprint planning. *(Not addressed by `V3_2_SPEC.md`; remains open.)*
 - [ ] **Cross-discipline ANALOGY mapping.** Currently the ANALOGY slot assumes Cyto and Micro share a theme space. If themes diverge per discipline (option B or C above), ANALOGY needs an explicit theme-mapping table.
+  - **→ Addressed in `V3_2_SPEC.md` (§ 5.5):** explicit ANALOGY map artifact with typed links (identical / partial / discarded_in_target / novel_in_target) at both theme and epic level. Drawio page "v3.2 ANALOGY Map" shows the cyto_v1 ↔ histo_v1 case visually. Open: cross-version querying behavior (fan-out vs primary-with-fanout) when two catalogs are live simultaneously.
 
 ## Resolved (moved out of open questions — cross-reference to decisions)
 
