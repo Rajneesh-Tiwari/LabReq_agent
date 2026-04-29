@@ -38,8 +38,8 @@ themselves.
   **SOP**                             Standard Operating Procedure --- the source document the agent
                                       reads.
 
-  **Epic**                            A capability domain. Maps to a Jira Epic. Example: *Microbiology
-                                      Specimen Receipt*.
+  **Epic**                            A capability domain. Maps to a Jira Epic. Example:
+                                      *Specimen Receiving*.
 
   **Story**                           A dev-actionable unit emitted by the agent. Each Story declares
                                       one of four `shape` values (see below). Maps to a Jira Story.
@@ -49,11 +49,13 @@ themselves.
                                       `capability`, `workflow-stage-split`, `configuration-instance`,
                                       `cleanup`.
 
-  **Theme (G1--G8)**                  Eight content tags that span the LIMS workflow: G1 Pre-Analytic,
-                                      G2 Analytic, G3 Post-Analytic, G4 Reporting, G5 QC, G6
-                                      Compliance, G7 Instrumentation, G8 Platform. Multi-label per
-                                      chunk (a chunk can carry multiple themes with confidence
-                                      scores).
+  **Theme (G*, H*, …)**               Content tag drawn from a discipline's theme catalog. The
+                                      Cytology theme set (`cyto_v1`) is G1 Pre-Analytic, G2 Analytic,
+                                      G3 Post-Analytic, G4 Reporting, G5 QC, G6 Compliance, G7
+                                      Instrumentation, G8 Platform. New disciplines may add their own
+                                      themes through Theme Discovery (e.g.\ Histology adds H1 Tissue
+                                      Processing, H2 Staining, H3 Block Archive, H4 Frozen Section).
+                                      Multi-label per chunk; carries a confidence score.
 
   **Teaching corpus**                 The curated set of SME-validated (SOP excerpt → Story) pairs
                                       from Cyto. Used as few-shot exemplars at extraction time.
@@ -114,6 +116,48 @@ themselves.
                                       as a delivered artifact alongside the epic and theme catalogs.
   ----------------------------------------------------------------------------------------------------
 
+# Theme Discovery --- pre-flight, one-time per discipline
+
+Theme Discovery runs *before* the main pipeline boots for a new
+discipline (and again only when the G0 alarm trips). Its job: emit a
+versioned theme catalog (e.g. `histo_v1`) by warm-starting against an
+existing prior (e.g. `cyto_v1`). Most themes inherit; novel ones must
+clear an evidence bar and an SME gate.
+
+![Theme Discovery --- four passes, pre-flight per discipline. Pass 4
+fires only when SME ratification changes the catalog (novel ratified or
+theme discarded).](diagrams/09_theme_discovery.png){width="6.5in"}
+
+**Algorithm.** Pass 1 scores each chunk against the prior centroids and
+assigns it if `score ≥ τ_match` (default 0.65); otherwise it joins the
+residual. Pass 2 clusters only the residuals (HDBSCAN); each cluster of
+size `≥ ε_novelty` (default 3) becomes a candidate novel theme; smaller
+clusters fall to G0. Pass 3 routes the novel candidates and the G0
+sample to SME --- inherited themes bypass review. Pass 4 fires only when
+the catalog version bumps, re-classifying the previously-tagged corpus
+(including any chunks orphaned by a discarded theme) against
+`catalog_v(N+1)`.
+
+**Two knobs control the bias.** `τ_match` (higher ⇒ eager-to-inherit;
+risk of forced fits) and `ε_novelty` (higher ⇒ stricter evidence bar
+before admitting novelty). The design intent is to *bias toward reuse*
+of existing structure --- which corresponds to a high `τ_match` and a
+non-trivial `ε_novelty`. Both are tunable per discipline based on
+telemetry from the first conditioned run.
+
+**Worked example --- bootstrapping Histology from `cyto_v1`.** Pass 1
+classifies 460/600 chunks into G1--G8 (residual = 140, including 12
+chunks that fit G7 above `τ_match`). Pass 2 finds 4 clusters above
+`ε_novelty`: H1 Tissue Processing (38), H2 Staining (32), H3 Block
+Archive (25), H4 Frozen Section (23); 22 chunks → G0 (3.7%, below
+alarm). Pass 3: SME confirms all 4 novel themes; flags G7 as redundant
+in histo (instrument concerns fold into H1) --- discarded. Pass 4
+re-classifies the 12 G7-orphaned chunks against the post-discard
+taxonomy (most land in H1, consistent with the ANALOGY map's `G7 → H1,
+partial` link). Final `histo_v1`: 11 active themes (7 inherited + 4
+novel; G7 recorded in ANALOGY map only). Reuse rate: 7/11 ≈ 64%; 7/8 of
+the prior themes (87.5%) survived.
+
 # Agent pipeline --- five agents, Validator gates twice
 
 ![Agent pipeline. Five agents run as a single batch over the SOP cohort.
@@ -162,48 +206,7 @@ A *sixth* agent --- **Theme Discovery** --- runs as **pre-flight**
 (one-time per discipline, not on the per-SOP critical path) before any
 of the above agents boot. It emits the versioned theme catalog (e.g.
 `cyto_v1`, `histo_v1`) that the rest of the system resolves themes
-against. The next section details it.
-
-# Theme Discovery --- pre-flight, one-time per discipline
-
-Theme Discovery runs *before* the main pipeline boots for a new
-discipline (and again only when the G0 alarm trips). Its job: emit a
-versioned theme catalog (e.g. `histo_v1`) by warm-starting against an
-existing prior (e.g. `cyto_v1`). Most themes inherit; novel ones must
-clear an evidence bar and an SME gate.
-
-![Theme Discovery --- four passes, pre-flight per discipline. Pass 4
-fires only when SME ratification changes the catalog (novel ratified or
-theme discarded).](diagrams/09_theme_discovery.png){width="6.5in"}
-
-**Algorithm.** Pass 1 scores each chunk against the prior centroids and
-assigns it if `score ≥ τ_match` (default 0.65); otherwise it joins the
-residual. Pass 2 clusters only the residuals (HDBSCAN); each cluster of
-size `≥ ε_novelty` (default 3) becomes a candidate novel theme; smaller
-clusters fall to G0. Pass 3 routes the novel candidates and the G0
-sample to SME --- inherited themes bypass review. Pass 4 fires only when
-the catalog version bumps, re-classifying the previously-tagged corpus
-(including any chunks orphaned by a discarded theme) against
-`catalog_v(N+1)`.
-
-**Two knobs control the bias.** `τ_match` (higher ⇒ eager-to-inherit;
-risk of forced fits) and `ε_novelty` (higher ⇒ stricter evidence bar
-before admitting novelty). The user's stated motive --- "don't just end
-up with entirely new ones" --- corresponds to a high `τ_match` and a
-non-trivial `ε_novelty`.
-
-**Worked example --- bootstrapping Histology from `cyto_v1`.** Pass 1
-classifies 460/600 chunks into G1--G8 (residual = 140, including 12
-chunks that fit G7 above `τ_match`). Pass 2 finds 4 clusters above
-`ε_novelty`: H1 Tissue Processing (38), H2 Staining (32), H3 Block
-Archive (25), H4 Frozen Section (23); 22 chunks → G0 (3.7%, below
-alarm). Pass 3: SME confirms all 4 novel themes; flags G7 as redundant
-in histo (instrument concerns fold into H1) --- discarded. Pass 4
-re-classifies the 12 G7-orphaned chunks against the post-discard
-taxonomy (most land in H1, consistent with the ANALOGY map's `G7 → H1,
-partial` link). Final `histo_v1`: 11 active themes (7 inherited + 4
-novel; G7 recorded in ANALOGY map only). Reuse rate: 7/11 ≈ 64%; 7/8 of
-the prior themes (87.5%) survived.
+against. See the *Theme Discovery* section above for the full algorithm.
 
 # Epic Extractor (conditioned) --- match before generate
 
@@ -284,14 +287,14 @@ Resolver.
 
     {
       "id": "EPIC-MICRO-001",
-      "title": "Microbiology Specimen Receipt",
+      "title": "Specimen Receiving",
       "description": "All capabilities related to receiving and accepting microbiology specimens.",
       "discipline": "microbiology",
       "themes": ["G1", "G5"],
       "theme_catalog_version": "cyto_v1",
       "epic_analog": {
         "catalog_id": "cyto_epic_v1",
-        "epic_id": "EPIC-CYTO-007",
+        "epic_id": "EPIC-CYTO-014",
         "equivalence": "identical"
       },
       "inheritance_basis": {
@@ -692,13 +695,18 @@ different time of use.
   ---------------------------------------------------------------------------
   Mechanism             Direction         When it fires     What flows
   --------------------- ----------------- ----------------- -----------------
-  `epic_analog`         Cyto Epic → Micro Epic Extractor    Just an ID
-                        Epic              (annotation)      reference ---
-                                                            Cyto Epic is
-                                                            recorded on the
-                                                            Micro Epic for
-                                                            SME traceability
-                                                            (D13).
+  `epic_analog`         Cyto Epic → Micro Epic Extractor    Cross-catalog
+                        Epic              (conditioned      link populated by
+                                          mode, by          construction when
+                                          construction)     the draft Epic
+                                                            classifies above
+                                                            `τ_match` against
+                                                            `cyto_epic_v1`.
+                                                            Carried as a
+                                                            struct
+                                                            `{catalog_id,
+                                                            epic_id,
+                                                            equivalence}`.
 
   `exemplar_of`         Cyto Story →      Story Extractor   The Cyto (excerpt
                         Micro Story       (few-shot prompt) → Story) pair
@@ -713,7 +721,13 @@ different time of use.
                                                             context section
                                                             of the LLM
                                                             prompt. *Adapt,
-                                                            don't copy.*
+                                                            don't copy.* The
+                                                            ANALOGY map
+                                                            (Output C) filters
+                                                            this slot to
+                                                            themes with
+                                                            target-side
+                                                            correspondents.
   ---------------------------------------------------------------------------
 
 The same Cyto material thus serves three roles: a curated few-shot
@@ -835,13 +849,15 @@ both gates.
     risk acknowledged (downstream readers); DoD includes a smoke test or
     QA path. *MUST/SHALL not required.*
 
-# What ships --- Output A and Output B
+# What ships --- Output A, Output B, and Output C
 
 ## Output A --- Jira artifacts
 
 A connected Epic / Story graph (the DAG above), pushed to Jira via REST.
 The graph is what the dev team works against; the YAML profile (Output
-B) is what their code consumes at runtime.
+B) is what their code consumes at runtime; the catalog artifacts
+(Output C) are what the architecture team uses to track what's reused
+from Cytology vs. genuinely new.
 
 ## Output B --- Per-culture YAML configuration profile
 
@@ -927,6 +943,36 @@ centrifugation):
   A literal constant in the rejection Profile, with the Story's AC
   logic                               pointing at it
   -----------------------------------------------------------------------
+
+## Output C --- Versioned catalog artifacts
+
+Three machine-readable YAML files emitted alongside the Jira artifacts
+and YAML profiles. They record the discipline's structural lineage and
+are the single source of truth for downstream tools that need to know
+which themes / epics carry over from Cytology and which are
+discipline-specific:
+
+-   `<discipline>_v<N>.yaml` --- the **theme catalog** for this
+    discipline. Lists `inherited_themes[]` (from the parent catalog),
+    `novel_themes[]` (SME-ratified additions), `discarded_themes[]`,
+    and the `unclassified_bucket` (G0). See *Theme catalog schema*
+    above for the full structure.
+-   `<discipline>_epic_v<N>.yaml` --- the **epic catalog**. Same shape
+    as the theme catalog at the epic level: `inherited_epics[]` (each
+    with `epic_analog` and `inheritance_basis`), `novel_epics[]` (each
+    with `novelty_basis`), `unclassified_drafts` (E0). See *Epic
+    catalog schema* above.
+-   `<source>_to_<target>_analogy.yaml` --- the **ANALOGY map**
+    linking source and target catalogs (e.g. `cyto_v1` →
+    `histo_v1`). Each link is typed (`identical` / `partial` /
+    `discarded_in_target` / `novel_in_target`) and drives the ANALOGY
+    retrieval slot at chat time. See *ANALOGY map schema* above.
+
+These artifacts are versioned (the trailing `_v<N>` bumps each time the
+catalog changes) and the bumped version triggers a Pass 4 re-tag of the
+existing Stories so that `theme_catalog_version` references stay
+resolvable. They live in source control alongside the SOPs they were
+derived from.
 
 # Cross-cutting
 
