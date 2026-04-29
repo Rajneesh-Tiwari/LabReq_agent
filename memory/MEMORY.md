@@ -1,0 +1,7 @@
+- [Project overview](project_overview.md) — Labcorp Connect LIMS Micro POC: agent pipeline, 4 story shapes, cross-SOP synthesis, per-culture config profiles. v3.2 adds Conditioned Discovery (warm-start theme + epic bootstrap from Cyto)
+- [Cyto's role](feedback_cyto_role.md) — Cyto is a teaching corpus (curated exemplars), not a registry to match against; no REUSE/ADAPT/NEW tagging
+- [Story actionability bar](feedback_story_bar.md) — actionability is shape-aware (capability/stage-split/config-instance/cleanup); single MUST/SHALL rubric over-fits
+- [Delivery format](feedback_delivery_format.md) — prefer .docx (pandoc-built) over LaTeX/PDF for client-facing handoff; PDFs visibly AI-generated
+- [Reference-doc style](feedback_doc_style.md) — schemas as field-tables + JSON/YAML examples, glossary upfront, concrete I/O traces, graph views where relationships matter
+- [Clean canonical docs vs evolution-framed](feedback_clean_canonical_docs.md) — for team-shareable docs, present current version as THE architecture; strip v(N)-vs-v(N-1) contrast, version markers, "addition" callouts. Keep evolution-framed walkthroughs as separate parallel files
+- [Theme taxonomy assumption](project_theme_taxonomy_assumption.md) — v3.1 assumed G1–G8 known upfront; v3.2 addresses this with Theme Discovery (warm-start, conditioned on prior catalog) — see V3_2_SPEC.md
