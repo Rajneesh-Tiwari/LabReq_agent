@@ -44,6 +44,17 @@ Pending decisions or items awaiting stakeholder confirmation. Resolved items mov
 - [ ] Theme `unclassified` chunks — currently orphaned at retrieval; need admin review path or absorb into adjacent slot.
 - [ ] Co-reference resolver — needs to know what type of artifact "epic 3" refers to (draft vs in-corpus epic).
 
+## Larger architectural questions for v3.2 / v4
+
+- [ ] **Theme cold-start for new disciplines.** v3.1 assumes themes G1–G8 are known upfront. They're load-bearing across the theme tagger, 8 precomputed centroid embeddings, intent-decode classifier (closed enum), ADJACENT retrieval slot ("centroid neighbors"), and the Epic schema. For Micro this is fine — Cyto's taxonomy bootstraps it. For a brand-new discipline (Histology, Hematology, Chemistry) without prior taxonomy, there's nothing to retrieve into and no labels for the classifier. Options for v3.2/v4:
+  - **(A) Theme-discovery agent** that runs once per discipline before the main pipeline: read N representative SOPs → cluster → propose taxonomy → SME confirmation → emit theme config. Pipeline boots from that config. Recommended.
+  - **(B) Layered themes** — keep G1–G3 (workflow stages: pre/analytic/post) as universal, replace G4–G8 with discipline-specific. Cleaner because workflow stages really are universal.
+  - **(C) Themes-from-data** — cluster the corpus, label clusters post-hoc. Adaptive but unstable; Story.themes[] becomes a moving target.
+  - Whichever path, themes should become **config-as-data with a versioned taxonomy**, not a closed enum baked into schemas.
+- [ ] **Unclassified bucket as first-class concept.** Today it's an implicit fallback for low-confidence theme tagging. It's also doing unspoken work as the safety valve when the taxonomy doesn't match reality. Should be promoted to G0 with an alarm threshold (e.g., >5% chunk volume triggers SME review).
+- [ ] **Story DAG materialization.** The Story schema's `dependencies[]` and `cross_links[]` arrays already serialize a DAG, but it lives only as flat arrays. Worth deciding: do we surface this as a Jira link graph, persist it in a graph DB / join table, or just leave it implicit? Affects how Dependency Resolver's topological ordering is exposed for sprint planning.
+- [ ] **Cross-discipline ANALOGY mapping.** Currently the ANALOGY slot assumes Cyto and Micro share a theme space. If themes diverge per discipline (option B or C above), ANALOGY needs an explicit theme-mapping table.
+
 ## Resolved (moved out of open questions — cross-reference to decisions)
 
 - ✅ How to handle ambiguous query intent → see D4 (4 explicit policies)
