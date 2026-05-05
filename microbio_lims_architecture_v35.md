@@ -329,6 +329,91 @@ post_analytic:
 | `quality` | enum | yes | passed / parked |
 | `parked_reason` | array of strings | conditional | Required if `quality = parked`; the failed-checks list from the Validator. Omitted when `quality = passed`. |
 
+#### One example per story shape
+
+The example above is a **capability** story. The other three shapes follow the same schema with shape-specific content. One concrete example each:
+
+**Workflow-stage-split** (decomposes a single underlying capability across the workflow positions where it operates):
+
+```json
+{
+  "id": "STORY-MICRO-0078",
+  "epic_id": "EPIC-MICRO-005",
+  "shape": "workflow-stage-split",
+  "title": "PHI update — after results are reported",
+  "description": "...",
+  "acceptance_criteria": [
+    {"when": "PHI corrected on a finalised report", "then": "system MUST regenerate report with audit trail entry"},
+    {"when": "downstream EHR has already received the report", "then": "system MUST send a corrected-result message"}
+  ],
+  "tests": [],
+  "persona": "supervisor",
+  "stage": "reporting_case_closure",
+  "themes": ["G3", "G4", "G6"],
+  "theme_catalog_version": "micro_v1",
+  "cross_links": ["STORY-MICRO-0076", "STORY-MICRO-0077"],
+  "source_citations": [{"sop": "SOP-MICRO-009", "lines": "112-128"}],
+  "estimated_complexity": "M",
+  "quality": "passed"
+}
+```
+
+`cross_links` enumerates sibling stories at the other workflow stages (e.g., 0076 = "PHI update before work has started"; 0077 = "PHI update after work has started").
+
+**Configuration-instance** (concrete typed values for a specific test or culture; not capability language):
+
+```json
+{
+  "id": "STORY-MICRO-0103",
+  "epic_id": "EPIC-MICRO-002",
+  "shape": "configuration-instance",
+  "title": "Blood culture incubation — bottle parameters",
+  "description": "...",
+  "acceptance_criteria": [
+    {"when": "blood culture bottle is received", "then": "system MUST configure incubation",
+     "expected_value": {"temperature_c": 35, "duration_h": 120, "agitation_rpm": 220, "alert_threshold_h": 24}},
+    {"when": "growth signal detected before alert_threshold_h", "then": "system MUST flag for early Gram stain"}
+  ],
+  "tests": ["blood_culture_incubation"],
+  "persona": null,
+  "stage": null,
+  "themes": ["G2", "G7"],
+  "theme_catalog_version": "micro_v1",
+  "source_citations": [{"sop": "SOP-MICRO-007", "lines": "44-58"}],
+  "estimated_complexity": "S",
+  "quality": "passed"
+}
+```
+
+Notice: concrete typed values in `expected_value`; no MUST/SHALL pretense beyond the configuration semantics; `persona` and `stage` null because configuration-instance stories target values, not actors at workflow positions.
+
+**Cleanup** (modifies an existing artifact — UI screen, table, code path):
+
+```json
+{
+  "id": "STORY-MICRO-0211",
+  "epic_id": "EPIC-MICRO-008",
+  "shape": "cleanup",
+  "title": "Remove obsolete \"Pending Pathologist Review\" status from Connect Microbiology results screen",
+  "description": "Status added in 2024 for a workflow that no longer exists. Currently confusing techs.",
+  "acceptance_criteria": [
+    {"when": "viewing the results screen for any micro case", "then": "the \"Pending Pathologist Review\" option MUST NOT appear in the status dropdown"},
+    {"when": "an existing case has \"Pending Pathologist Review\" status", "then": "system MUST migrate it to \"Pending Review\" with audit trail entry"}
+  ],
+  "tests": [],
+  "persona": null,
+  "stage": null,
+  "themes": ["G3", "G8"],
+  "theme_catalog_version": "micro_v1",
+  "source_citations": [{"sop": "SOP-MICRO-016", "lines": "31-34"}],
+  "edge_cases_handled": ["existing case with the status", "in-flight orders with the status"],
+  "estimated_complexity": "S",
+  "quality": "passed"
+}
+```
+
+The artifact (the status dropdown on the results screen) is named explicitly. Before/after observable. Regression risk acknowledged via `edge_cases_handled`.
+
 ### Epic
 
 ```json
@@ -725,6 +810,223 @@ Used at the Validator gate. After 2 failed revision attempts, stories transition
 ### Tightened thresholds + drift report
 
 Used at G0/E0 alarm response. Bucket > 5% rolling-window → auto-rerun Discovery with τ_match −0.05; floor at τ_match = 0.50. Drift report (weekly + on alarm trip) summarizes quorum decisions, parked-story counts, G0/E0 trends, threshold-tightening events. Reviewable by any human; blocks nothing.
+
+---
+
+## Audit artifacts — concrete examples
+
+The system emits three audit artifacts alongside Outputs A/B/C. Each is referenced in the schemas above; concrete examples below.
+
+### Quorum decision log entry
+
+One file (or row) per novelty candidate evaluated. Captures who voted what and why.
+
+```yaml
+# audit/quorum_decisions/2026-05-15T10-04-22Z_theme_MI1.yaml
+run_id: 2026-05-15T10:00:00Z-cyto-to-micro
+discovery_type: theme               # or: epic, discard
+candidate_id: ce_theme_001
+proposed_name: "Susceptibility Testing"
+cluster_evidence:
+  n_chunks: 42
+  sample_excerpts:
+    - "Antibiotic susceptibility patterns are read at 18-24 hours; MIC values are interpreted per CLSI breakpoints…"
+    - "AST report is delivered alongside the identification report…"
+quorum_input:
+  panel_size_n: 5
+  threshold_m: 3
+  convergence_threshold: 0.8
+  aggregation: min_pairwise
+votes:
+  - {agent_id: 1, prompt_frame: "coherent novel theme?",     vote: admit,  one_liner: "Antibiotic susceptibility patterns and MIC interpretation."}
+  - {agent_id: 2, prompt_frame: "distinct from existing?",   vote: admit,  one_liner: "Susceptibility testing — distinct enough from G2 Analytic to warrant its own theme."}
+  - {agent_id: 3, prompt_frame: "is description sharp?",     vote: admit,  one_liner: "Antibiotic susceptibility readings, MIC interpretation, CLSI breakpoint application."}
+  - {agent_id: 4, prompt_frame: "behaviorally consistent?",  vote: admit,  one_liner: "Antibiotic susceptibility evaluation across plates, instruments, and reporting."}
+  - {agent_id: 5, prompt_frame: "fragments catalog?",        vote: admit,  one_liner: "Susceptibility testing — coherent capability, no fragmentation risk."}
+description_convergence_score: 0.92
+decision: admit
+decided_at: 2026-05-15T10:04:22Z
+```
+
+### Parked story entry
+
+One file per story that failed Validator and could not be revised within the 2-attempt budget. Includes the failed-checks list and the original SOP excerpt for follow-up.
+
+```yaml
+# parked/2026-05-15-run-001/STORY-MICRO-DRAFT-042.yaml
+story_id: STORY-MICRO-DRAFT-042
+attempt_count: 3
+final_state: parked
+quality: parked
+parked_at: 2026-05-15T11:32:00Z
+
+last_attempt:
+  generated_content:
+    shape: capability
+    title: "Validate received specimens against open orders"
+    persona: lims
+    stage: accessioning_verification
+    tests: [gram_stain]
+    acceptance_criteria:
+      - {when: "specimen received", then: "system flags appropriately"}
+  failed_checks:
+    - check: "AC #1 uses ambiguous quantifier (\"appropriately\")"
+      shape_rubric: capability.no_ambiguous_quantifiers
+    - check: "AC #1 missing observable outcome — \"flags appropriately\" is not testable"
+      shape_rubric: capability.observable_outcomes_per_AC
+    - check: "Source citation cites SOP-MICRO-014 lines 23-31, but those lines do not contain a flagging rule"
+      shape_rubric: capability.source_citation_resolves
+  validator_verdict: "Cannot pass capability-shape rubric without concrete observable outcome and resolvable source citation."
+
+source_excerpt:
+  sop_id: SOP-MICRO-014
+  lines: "23-31"
+  text: "Specimens are received at the accessioning desk; staff verify the patient identifier and accession number against the open order in Connect Microbiology…"
+revision_history:
+  - {attempt: 1, failed_checks: [...], reasoning: "Initial draft lacked concrete threshold."}
+  - {attempt: 2, failed_checks: [...], reasoning: "Added '24h flag' but cited the wrong SOP section."}
+  - {attempt: 3, failed_checks: [...], reasoning: "Could not produce a defensible AC from this excerpt — likely needs SOP enrichment or a tighter source range."}
+```
+
+Parked stories are reviewable by any architect/PM; they do not block the pipeline. A sustained > 15% parked-rate signals upstream content or rubric calibration drift.
+
+### Drift report (weekly)
+
+Summarizes the period's catalog churn, parked queue, and alarm activity. Emitted to a known channel (dashboard / Slack / Jira ticket — TBD).
+
+```markdown
+# Drift Report — Week of 2026-05-12 → 2026-05-18
+
+## Summary
+- Disciplines active: micro (cyto_v1 + micro_epic_v1), histo (cyto_v1 + histo_epic_v1)
+- Quorum decisions: 6 admit, 2 fold-in, 1 park (G0)
+- Parked stories: 14 (4.1% of 339 emitted) — within budget (< 5%)
+- G0 / E0 alarms: 0 trips this week
+- Catalog version bumps: 1 (`micro_epic_v1` → `micro_epic_v2` — admitted EPIC-MICRO-007 AST)
+
+## Quorum admissions (6)
+| Run | Discovery | Candidate | Votes | Convergence | Decision |
+|---|---|---|---|---|---|
+| 2026-05-15 micro | epic | EPIC-MICRO-007 Antibiotic Susceptibility Testing | 5 admit / 0 / 0 | 0.91 | admit |
+| 2026-05-15 micro | theme | MI1 Susceptibility Testing | 5 admit / 0 / 0 | 0.92 | admit |
+| 2026-05-15 micro | theme | MI2 Biosafety Containment | 4 admit / 1 fold→G6 / 0 | 0.85 | admit |
+| 2026-05-16 histo | theme | H1 Tissue Processing | 5 admit / 0 / 0 | 0.91 | admit |
+| 2026-05-16 histo | theme | H2 Staining | 5 admit / 0 / 0 | 0.94 | admit |
+| 2026-05-16 histo | theme | H3 Block & Slide Archive | 4 admit / 1 fold→G6 / 0 | 0.86 | admit |
+
+## Quorum fold-ins (2)
+| Run | Candidate | Fold target | Votes | Reason |
+|---|---|---|---|---|
+| 2026-05-15 micro | MI3 Critical Result Notification | G4 Reporting | 3 fold→G4 / 2 admit | majority on fold target; admit fell short of M=3 |
+| 2026-05-16 histo | discard quorum: G7 Instrumentation | discarded | 4 discard / 1 retain | sparse evidence (12 chunks) in histo_v1 |
+
+## Quorum parks (1)
+| Run | Candidate | Reason |
+|---|---|---|
+| 2026-05-16 histo | H4 Frozen Section | 3 admit / 1 fold→G2 / 1 reject — 0.78 convergence below 0.8 threshold |
+
+## G0 / E0 buckets
+- micro G0: 38 chunks (6.3% of 600) — above 5% threshold; auto-rerun queued for next cycle with τ_match=0.60
+- histo G0: 23 chunks (H4 + 1 noise) (3.8% of 600) — within threshold
+
+## Auto-park breakdown by shape
+| Shape | Parked | Emitted | Rate |
+|---|---|---|---|
+| capability | 4 | 88 | 4.5% |
+| workflow-stage-split | 6 | 142 | 4.2% |
+| configuration-instance | 1 | 67 | 1.5% |
+| cleanup | 3 | 42 | 7.1% |
+
+## Threshold-tightening events
+- None this week.
+
+## Recommended actions
+- None blocking. Cleanup-shape parked rate (7.1%) trending up — re-check rubric next week.
+```
+
+The report is informational. No part of the pipeline waits on a human reading it.
+
+---
+
+## Onboarding playbook — adding a new discipline
+
+A practical step-by-step. Assumes the architect has shell access to the repo and is following the v3.5 architecture.
+
+### Step 1 — Choose the prior discipline
+
+Pick the prior whose existing dev work is most workflow-similar to the new discipline. For most clinical-lab disciplines, **Cytology is the seminal prior** (anatomic-pathology adjacent). For molecular-leaning disciplines (Hematology, future Molecular Pathology), Microbiology may be a closer prior once it's validated.
+
+Heuristic table:
+
+| New discipline | Suggested prior | Rationale |
+|---|---|---|
+| Microbiology | Cytology | AP-adjacent; specimen-based workflow |
+| Histology | Cytology | AP-adjacent; specimen-based workflow |
+| Hematology | Microbiology (preferred) or Cytology | Culture / panel workflow closer to micro than to slide-prep cyto |
+| Chemistry | Microbiology (preferred) or Cytology | Instrument-driven; less slide-prep |
+
+If undecided, default to Cytology for the seminal extension. Record the choice in the discipline's onboarding manifest.
+
+### Step 2 — Prepare the static catalogs
+
+Build (or receive from the lab's leadership) two YAMLs:
+
+- **`<discipline>_test_v1.yaml`** — the full set of in-scope tests. Each entry: `id`, `name`, `description`, `operating_sops[]`. See the test catalog schema above.
+- **`<discipline>_persona_v1.yaml`** — the full set of actors. Each entry: `id`, `name`, `actor_type ∈ {human, system, external_system}`, `workflow_stages[]`. See the persona catalog schema above.
+
+Validate: run a structural check that every entry has all required fields and that every `actor_type` and `workflow_stages` value is in its enum.
+
+### Step 3 — Curate the cross-discipline ANALOGY links
+
+Build the static portion of the ANALOGY map:
+
+- `test_links[]` — map tests across the prior and the new discipline. Most entries will be `equivalence: novel_in_target` (most tests are unique to a discipline). The few cross-discipline analogs (e.g., specimen-prep steps that overlap) should be `partial`. Where the prior had a test the new discipline doesn't perform, mark `discarded_in_target`.
+- `persona_links[]` — map roles. Most labs share workflow personas (Ordering Provider, Lab Director, Compliance Officer) with `equivalence: identical`. Discipline-specific specialists (Cytotechnologist vs. Histotechnologist) usually map as `partial`.
+
+Time budget: ~2–4 architect-hours for the seminal extension; faster for subsequent disciplines as the alignment patterns become familiar.
+
+### Step 4 — Sample the SOP corpus
+
+Select 15–30 representative SOPs from the new discipline. Coverage matters more than raw count: ensure the sample touches every test in the catalog and every workflow stage. The first run of Theme Discovery operates on this sample.
+
+### Step 5 — Run the pre-flight (Theme Discovery)
+
+Trigger Theme Discovery with the sample SOPs + prior theme catalog. The agent emits a `<discipline>_v1.yaml` theme catalog with quorum decisions. Review the quorum decision log: did any admissions surprise you? Any of your expected novelties get folded back to existing themes?
+
+If the G0 bucket is over 5% on the first run, the alarm auto-reruns Discovery with `τ_match −0.05`. The drift report captures the trip.
+
+### Step 6 — Run the conditioned Epic Extractor over the full SOP corpus
+
+For each SOP in the in-scope corpus: draft epics, match against `<prior>_epic_v1`, accumulate residuals across SOPs, run epic-novelty quorum at the batch boundary. Emits `<discipline>_epic_v1.yaml`.
+
+### Step 7 — Run the per-SOP main pipeline
+
+For each SOP: chunk-tag, Story Extractor, Validator gate 1, auto-park failures. Validated stories are kept for the cross-SOP synthesis phase.
+
+### Step 8 — Run cross-SOP synthesis at the batch boundary
+
+Cluster validated stories on `(test, role, stage, shape, behavior)`. Emit capability stories for clusters with members from ≥ 2 distinct SOPs. Pass them through Validator gate 2.
+
+### Step 9 — Resolve dependencies, generate outputs
+
+Dependency Resolver materializes the topological order. The system emits Output A (Jira tree), Output B (per-discipline configuration profiles), Output C (catalogs + ANALOGY map + audit artifacts).
+
+### Step 10 — Hand off to the dev team
+
+The dev team receives Output A; the platform team receives Output B; the architecture team receives Output C. The drift report goes to the operations channel. The architect's day-2 role is monitoring the drift report and triaging the parked queue.
+
+### Time budget — first deployment
+
+| Step | Effort |
+|---|---|
+| 1. Choose prior | 5 min |
+| 2. Prepare static catalogs | 2–6 architect-hours (depends on lab leadership availability) |
+| 3. Curate ANALOGY links | 2–4 architect-hours |
+| 4. Sample SOPs | 1 architect-hour |
+| 5–9. Pipeline runs | minutes (compute-bound; not architect-time) |
+| 10. Hand-off + drift review | ongoing |
+
+Total architect-time per new discipline: ~6–12 hours one-time, plus weekly drift report review.
 
 ---
 
