@@ -12,7 +12,7 @@ Produces: client_alignment_deck.pptx alongside this script.
   3. The agents (cast of characters)
   4. The full flow at a glance (3 phases)
   5. Phase 1 — Setup: flowchart + theme catalog schema example
-  6. Phase 2 — Per-document: flowchart + story schema example
+  6. Phase 2 — Per-SOP: flowchart + story schema example
   7. Phase 3 — Combine: flowchart + capability story example
   8. What ships and the alignment ask
 """
@@ -312,14 +312,14 @@ def slide_one(prs):
     add_title(slide, "What we are building")
 
     add_text(slide, 0.5, 1.1, 12.5, 0.6,
-             "A system that turns lab procedure documents into a ready-to-use "
-             "backlog of dev work — without an expert reviewing each item.",
+             "A system that turns SOPs (Standard Operating Procedures) into a "
+             "ready-to-use backlog of dev work — without an expert reviewing each item.",
              font_size=15, color=TEXT_DARK)
 
     box_w, box_h, y = 3.4, 1.4, 2.0
     x1, x2, x3 = 0.6, 4.95, 9.3
     add_box(slide, x1, y, box_w, box_h,
-            "Lab procedure documents\n(SOPs)",
+            "SOPs\n(Standard Operating Procedures)",
             font_size=14, bold=True)
     add_box(slide, x2, y, box_w, box_h, "Our system",
             fill=SYS_FILL, line=SYS_LINE, font_size=18, bold=True)
@@ -338,8 +338,8 @@ def slide_one(prs):
     add_text(slide, 0.5, 4.4, 12.5, 0.4,
              "Why this matters", font_size=18, bold=True, color=ACCENT)
     add_bullets(slide, 0.7, 4.9, 12.0, 1.5, [
-        "Today: every new procedure → manual expert review → hand-written stories. Slow, costly, inconsistent.",
-        "With this system: documents in, structured stories out. Quality is built into the rules, not into one expert's review.",
+        "Today: every new SOP → manual expert review → hand-written stories. Slow, costly, inconsistent.",
+        "With this system: SOPs in, structured stories out. Quality is built into the rules, not into one expert's review.",
         "Same system, any clinical discipline. Each new discipline is a configuration change, not an engineering project.",
     ], font_size=13)
 
@@ -407,7 +407,7 @@ def slide_two(prs):
              "Not inherited from the prior discipline",
              font_size=14, bold=True, color=ACCENT)
     add_text(slide, 0.7, 5.92, 12.5, 0.45,
-             "Tests   •   Roles   •   Documents (new discipline's SOPs)   •   "
+             "Tests   •   Roles   •   The new discipline's own SOPs   •   "
              "Tasks (out of scope; dev team owns decomposition)",
              font_size=11, color=TEXT_GREY)
     add_text(slide, 0.5, 6.45, 12.5, 0.6,
@@ -432,28 +432,28 @@ def slide_three(prs):
     rows = [
         ["1", "Theme Discovery",
          "Builds the new discipline's theme catalog (categories) by classifying "
-         "sample documents against the prior discipline's themes; new themes "
+         "sample SOPs against the prior discipline's themes; new themes "
          "emerge only with evidence.",
          "Once per new discipline\n(re-runs only on alarm)"],
         ["2", "Epic Extractor (conditioned)",
-         "Drafts high-level epics from each document; matches each draft "
+         "Drafts high-level epics from each SOP; matches each draft "
          "against the prior discipline's epic catalog. Matches inherit; "
          "non-matches are clustered for novelty review.",
-         "Once per document\n+ batch novelty pass"],
+         "Once per SOP\n+ batch novelty pass"],
         ["3", "Story Extractor",
-         "Drafts user stories from document chunks using schema + shape "
+         "Drafts user stories from SOP chunks using schema + shape "
          "definitions + closed-enum catalogs. Optionally retrieves "
          "(test, role, stage, shape)-matched exemplars from the prior "
          "discipline's Jira if it's available — improves style fidelity.",
-         "Per epic, per document"],
+         "Per epic, per SOP"],
         ["4", "Validator (quality check)",
          "Quality-checks every emitted story against shape-specific rules "
          "(MUST/SHALL for capabilities; concrete values for configurations; "
          "named artifact for cleanups). Failures auto-park.",
          "Twice per story\n(after extract + after synthesis)"],
         ["5", "Cross-SOP Synthesis",
-         "After all documents are processed, finds patterns recurring across "
-         "≥ 2 documents and lifts them into broader \"capability stories\" "
+         "After all SOPs are processed, finds patterns recurring across "
+         "≥ 2 SOPs and lifts them into broader \"capability stories\" "
          "with parameters.",
          "Once per batch"],
         ["6", "Dependency Resolver",
@@ -549,14 +549,14 @@ def slide_four(prs):
          "Build theme & epic catalogs for the new discipline, conditioned on the prior discipline.",
          "Agents: Theme Discovery, Epic Extractor, Quorum panel.",
          "Runs once per new discipline.\nRepeats only if alarm fires."),
-        ("Phase 2\nPer-document",
-         "Read each procedure document, draft stories, quality-check.",
+        ("Phase 2\nPer-SOP",
+         "Read each SOP, draft stories, quality-check.",
          "Agents: Epic Extractor, Story Extractor, Validator.",
-         "Runs for every new procedure document."),
+         "Runs for every new SOP."),
         ("Phase 3\nCombine + ship",
-         "Look across all documents, lift recurring patterns, generate outputs.",
+         "Look across all SOPs, lift recurring patterns, generate outputs.",
          "Agents: Cross-SOP Synthesis, Validator, Dependency Resolver.",
-         "Runs after a batch of documents is processed."),
+         "Runs after a batch of SOPs is processed."),
     ]
     for x, (head, mid, agents, foot) in zip(px, titles):
         add_box(slide, x, phase_y, phase_w, 0.85, head,
@@ -658,9 +658,10 @@ def slide_five(prs):
     add_arrow(slide, cx, y8 + dh, cx, y9,
               label="yes (admit)", label_offset=(0.05, -0.18),
               label_color=END_LINE, label_bold=True)
-    # branches converge into final node from the side branches
-    # inherit → final
-    add_arrow(slide, inh_x + 1.25, inh_y + nh, inh_x + 1.25, y9 + nh / 2,
+    # inherit branch converges into final node — elbow: down from inherit,
+    # then left into the right edge of the final node
+    add_arrow(slide, inh_x + 1.25, inh_y + nh,        # start: bottom-center of inherit box
+              fx + nw, y9 + nh / 2,                    # end: right-edge-middle of final node
               color=SIDE_BRANCH_LINE, weight=1.25,
               connector_type=MSO_CONNECTOR.ELBOW)
 
@@ -715,10 +716,10 @@ def slide_five(prs):
 
 def slide_six(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    add_title(slide, "Phase 2 — Per-document processing")
+    add_title(slide, "Phase 2 — Per-SOP processing")
 
     add_text(slide, 0.5, 1.05, 12.5, 0.4,
-             "Runs once per procedure document. Result: validated stories under the right epics.",
+             "Runs once per SOP. Result: validated stories under the right epics.",
              font_size=12, color=TEXT_DARK)
 
     # ----- left half: flowchart -----
@@ -821,7 +822,7 @@ def slide_seven(prs):
     add_title(slide, "Phase 3 — Combine patterns + continuous monitoring")
 
     add_text(slide, 0.5, 1.05, 12.5, 0.4,
-             "Runs after a batch of documents. Recurring patterns lift to "
+             "Runs after a batch of SOPs. Recurring patterns lift to "
              "broader \"capability stories\" with parameters.",
              font_size=12, color=TEXT_DARK)
 
@@ -834,7 +835,7 @@ def slide_seven(prs):
 
     y1 = 1.55
     add_node(slide, fx, y1, nw, nh,
-             "All kept stories\nfrom all documents",
+             "All kept stories\nfrom all SOPs",
              kind="start", font_size=9, bold=True)
 
     y2 = y1 + nh + 0.15
@@ -882,9 +883,10 @@ def slide_seven(prs):
     add_arrow(slide, cx, y4 + nh, cx, y5)
     add_arrow(slide, cx, y5 + nh, cx, y6)
     add_arrow(slide, cx, y6 + nh, cx, y7)
-    # keep-branch joins the final
-    add_arrow(slide, keep_x + 1.25, keep_y + nh,
-              keep_x + 1.25, y7 + nh / 2,
+    # keep-concrete branch converges into final node — elbow: down from
+    # keep-concrete, then left into the right edge of the final backlog node
+    add_arrow(slide, keep_x + 1.25, keep_y + nh,    # start: bottom-center of keep-concrete box
+              fx + nw, y7 + nh / 2,                  # end: right-edge-middle of final node
               color=SIDE_BRANCH_LINE, weight=1.25,
               connector_type=MSO_CONNECTOR.ELBOW)
 
@@ -913,7 +915,7 @@ def slide_seven(prs):
     - STORY-MICRO-0023       # cases
     - STORY-MICRO-0041       # this lifted
     - STORY-MICRO-0089       # from
-  source_documents: [SOP-014, SOP-019, SOP-022]"""
+  source_sops: [SOP-014, SOP-019, SOP-022]"""
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
                  font_size=9.5, title="Example: a lifted capability story")
 
@@ -971,7 +973,7 @@ def slide_eight(prs):
         "The list of tests for each discipline in scope (blood culture, urine culture, target pathogens for Microbiology).",
         "The list of roles in those disciplines (with type: human / system / external).",
         "The prior discipline's theme catalog and epic catalog (small structured YAMLs — Cytology for the seminal extension).",
-        "A sample of ~20 procedure documents per new discipline to seed Phase 1.",
+        "A sample of ~20 SOPs per new discipline to seed Phase 1.",
     ], font_size=11)
 
     add_text(slide, 0.5, 5.15, 12.5, 0.35,
