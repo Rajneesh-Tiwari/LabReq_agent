@@ -521,14 +521,36 @@ def slide_three(prs):
 
     callout_y = table_y + table_h + 0.18
     callout_h = 7.05 - callout_y
-    add_box(slide, 0.4, callout_y, 12.55, callout_h,
-            "Quorum panel (5 reviewer agents):  used by Theme Discovery and Epic Extractor when admitting "
-            "new categories. Each reviewer asks a different question — \"is this coherent?\", \"is it distinct?\", "
-            "\"is the description sharp?\", etc. Need 3 of 5 agreeing on the same action; their descriptions must "
-            "be similar enough to count. Otherwise the candidate goes to the review pile for the next round.",
-            fill=SYS_FILL, line=SYS_LINE,
-            font_size=11, bold=False, font_color=TEXT_DARK,
-            align=PP_ALIGN.LEFT, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE)
+    # Quorum panel callout — shows 5 reviewer agents running IN PARALLEL
+    add_text(slide, 0.4, callout_y, 12.55, 0.3,
+             "Quorum panel — 5 reviewer agents running IN PARALLEL  (used inside Theme Discovery and Epic Extractor)",
+             font_size=12, bold=True, color=ACCENT)
+    # 5 small boxes side by side
+    qp_y = callout_y + 0.32
+    qp_h = 0.55
+    qp_gap = 0.08
+    qp_total_w = 12.55
+    qp_w = (qp_total_w - 4 * qp_gap) / 5
+    angles = [
+        "1. Is it coherent\nas a new theme?",
+        "2. Is it distinct\nfrom existing?",
+        "3. Is the description\nsharp enough?",
+        "4. Are the cluster\nmembers consistent?",
+        "5. Would admitting\nfragment the catalog?",
+    ]
+    for i, angle in enumerate(angles):
+        x = 0.4 + i * (qp_w + qp_gap)
+        add_box(slide, x, qp_y, qp_w, qp_h, angle,
+                fill=SYS_FILL, line=SYS_LINE,
+                font_size=9, bold=False)
+    # below the 5 boxes: vote-aggregation note
+    note_y = qp_y + qp_h + 0.05
+    note_h = 7.05 - note_y
+    add_text(slide, 0.4, note_y, 12.55, note_h,
+             "All 5 vote in parallel. Need 3 of 5 agreeing on the same action; their descriptions must be similar enough.  "
+             "Otherwise the candidate goes to the review pile for the next round.",
+             font_size=10, italic=True, color=TEXT_DARK,
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 
 
 # ---- slide 4: full flow at a glance ---------------------------------------
@@ -623,10 +645,22 @@ def slide_five(prs):
     y6 = y4 + dh + 0.3
     add_node(slide, fx, y6, nw, nh, "Cluster residual into candidates",
              kind="process", font_size=9)
+    # 5 parallel quorum agents (instead of one box)
     y7 = y6 + nh + 0.15
-    add_node(slide, fx, y7, nw, nh, "5-reviewer quorum panel votes",
-             kind="agent", font_size=9, bold=True)
-    y8 = y7 + nh + 0.15
+    qph = 0.50
+    qpw_total = nw
+    qpw_each = (qpw_total - 4 * 0.04) / 5
+    for i in range(5):
+        qx = fx + i * (qpw_each + 0.04)
+        add_box(slide, qx, y7, qpw_each, qph, str(i + 1),
+                fill=SYS_FILL, line=SYS_LINE,
+                font_size=11, bold=True)
+    # label below the row of 5
+    add_text(slide, fx, y7 + qph + 0.02, nw, 0.20,
+             "5 reviewers vote in parallel",
+             font_size=8, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    y8 = y7 + qph + 0.30
     add_diamond(slide, fx + 0.4, y8, nw - 0.8, dh,
                 "3 of 5 agree?", font_size=9)
     park_x = fx + nw + 0.4
@@ -649,8 +683,10 @@ def slide_five(prs):
     add_arrow(slide, cx, y4 + dh, cx, y6,
               label="no\n(residual)", label_offset=(0.08, -0.18),
               label_color=PARK_LINE, label_bold=True)
+    # cluster → top-center of the 5-agent row
     add_arrow(slide, cx, y6 + nh, cx, y7)
-    add_arrow(slide, cx, y7 + nh, cx, y8)
+    # bottom-center of the 5-agent row → quorum decision diamond
+    add_arrow(slide, cx, y7 + qph + 0.22, cx, y8)
     # quorum branches
     add_arrow(slide, fx + nw - 0.4, y8 + dh / 2, park_x, park_y + nh / 2,
               label="no", label_offset=(0.05, -0.18),
@@ -719,7 +755,8 @@ def slide_six(prs):
     add_title(slide, "Phase 2 — Per-SOP processing")
 
     add_text(slide, 0.5, 1.05, 12.5, 0.4,
-             "Runs once per SOP. Result: validated stories under the right epics.",
+             "Runs once per SOP. Result: validated stories under the right epics.   "
+             "Multiple SOPs can run through this pipeline in parallel (data-parallel).",
              font_size=12, color=TEXT_DARK)
 
     # ----- left half: flowchart -----
