@@ -6,15 +6,16 @@ Usage:
 
 Produces: client_alignment_deck.pptx alongside this script.
 
-8 slides:
+9 slides:
   1. What we are building
   2. What "prior discipline to learn from" means
   3. The agents (cast of characters)
   4. The full flow at a glance (3 phases)
   5. Phase 1 — Setup: flowchart + theme catalog schema example
-  6. Phase 2 — Per-SOP: flowchart + story schema example
+  6. Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
   7. Phase 3 — Combine: flowchart + capability story example
-  8. What ships and the alignment ask
+  8. What happens when something fails (3-level fallback + 3 queues)
+  9. What ships and the alignment ask
 """
 
 from pathlib import Path
@@ -755,8 +756,8 @@ def slide_six(prs):
     add_title(slide, "Phase 2 — Per-SOP processing")
 
     add_text(slide, 0.5, 1.05, 12.5, 0.4,
-             "Runs once per SOP. Result: validated stories under the right epics.   "
-             "Multiple SOPs can run through this pipeline in parallel (data-parallel).",
+             "Runs once per SOP. Result: validated stories under the right epics. "
+             "The dashed box below wraps everything that runs per SOP — N instances run in parallel.",
              font_size=12, color=TEXT_DARK)
 
     # ----- left half: flowchart -----
@@ -765,6 +766,32 @@ def slide_six(prs):
     nh = 0.55
     cx = fx + nw / 2
     dh = 0.75
+
+    # ForEach-SOP container — wraps the per-SOP pipeline. Visual hint
+    # that the entire pipeline runs once per SOP, with N instances in parallel.
+    container = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                       Inches(0.30), Inches(1.45),
+                                       Inches(6.20), Inches(5.70))
+    container.fill.background()
+    container.line.color.rgb = RGBColor(0x90, 0x99, 0xA3)
+    container.line.width = Pt(1.0)
+    try:
+        from pptx.enum.dml import MSO_LINE_DASH_STYLE
+        container.line.dash_style = MSO_LINE_DASH_STYLE.DASH
+    except Exception:
+        pass
+    # ForEach label hugging the container's top border
+    label_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                      Inches(0.45), Inches(1.36),
+                                      Inches(3.5), Inches(0.22))
+    label_bg.fill.solid()
+    label_bg.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    label_bg.line.fill.background()
+    add_text(slide, 0.45, 1.36, 3.5, 0.22,
+             "ForEach SOP   —   N instances run in parallel",
+             font_size=10, italic=True, bold=True,
+             color=RGBColor(0x60, 0x68, 0x70),
+             align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 
     y1 = 1.55
     add_node(slide, fx, y1, nw, nh, "SOP arrives", kind="start",
@@ -969,6 +996,161 @@ def slide_seven(prs):
 
 # ---- slide 8: what ships + alignment --------------------------------------
 
+def slide_failures(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_title(slide, "What happens when something fails")
+
+    add_text(slide, 0.5, 1.05, 12.5, 0.5,
+             "Failures at three levels — each has a deterministic fallback. "
+             "No human intervention is required at runtime.",
+             font_size=12, color=TEXT_DARK)
+
+    # 3 panels horizontally
+    panel_y = 1.7
+    panel_h = 3.7
+    panel_w = 4.05
+    gap = 0.18
+    panels_total = 3 * panel_w + 2 * gap
+    px0 = (13.333 - panels_total) / 2
+
+    panels = [
+        {
+            "header": "Per-call",
+            "subhead": "(LLM error or timeout)",
+            "fill": SYS_FILL,
+            "line": SYS_LINE,
+            "rows": [
+                ("Trigger", "An agent's LLM call returns an error or times out."),
+                ("Fallback", "Retry with exponential backoff (3 attempts)."),
+                ("If persistent", "Defer the item to the next batch; log the failure to the audit trail."),
+                ("Pipeline impact", "Other items continue. No block."),
+            ],
+        },
+        {
+            "header": "Per-story",
+            "subhead": "(quality check fails)",
+            "fill": SIDE_BRANCH_FILL,
+            "line": SIDE_BRANCH_LINE,
+            "rows": [
+                ("Trigger", "Validator rejects a story."),
+                ("Fallback", "Up to 2 revision attempts; the Validator drives revisions with the failed-checks list."),
+                ("If persistent", "Auto-park to the review pile. Story does not reach Output A in strict mode."),
+                ("Pipeline impact", "Subsequent stories continue. No block."),
+            ],
+        },
+        {
+            "header": "Per-batch",
+            "subhead": "(drift / catalog issues)",
+            "fill": PARK_FILL,
+            "line": PARK_LINE,
+            "rows": [
+                ("Trigger", "G0 / E0 bucket > 5% rolling, or auto-park rate > 15% sustained."),
+                ("Fallback", "Auto-rerun discovery with τ_match −0.05 (more permissive); re-cluster G0; quorum re-evaluates."),
+                ("If τ_match floor (0.50) hit", "Drift report flags the discipline for manual catalog re-curation (one-time architect action)."),
+                ("Pipeline impact", "Pipeline continues. The drift report is informational."),
+            ],
+        },
+    ]
+
+    for i, p in enumerate(panels):
+        x = px0 + i * (panel_w + gap)
+        # header strip
+        add_box(slide, x, panel_y, panel_w, 0.5, p["header"],
+                fill=p["fill"], line=p["line"],
+                font_size=14, bold=True, font_color=ACCENT)
+        add_text(slide, x, panel_y + 0.55, panel_w, 0.25, p["subhead"],
+                 font_size=10, italic=True, color=TEXT_GREY,
+                 align=PP_ALIGN.CENTER)
+
+        # body box (white background, panel-color border)
+        body = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                      Inches(x), Inches(panel_y + 0.85),
+                                      Inches(panel_w), Inches(panel_h - 0.85))
+        body.fill.solid()
+        body.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        body.line.color.rgb = p["line"]
+        body.line.width = Pt(0.75)
+        tf = body.text_frame
+        tf.word_wrap = True
+        tf.margin_left = Inches(0.12)
+        tf.margin_right = Inches(0.12)
+        tf.margin_top = Inches(0.10)
+        tf.margin_bottom = Inches(0.10)
+        tf.vertical_anchor = MSO_ANCHOR.TOP
+        for j, (label, text) in enumerate(p["rows"]):
+            if j == 0:
+                pp = tf.paragraphs[0]
+            else:
+                pp = tf.add_paragraph()
+            pp.alignment = PP_ALIGN.LEFT
+            r1 = pp.add_run()
+            r1.text = label + ": "
+            r1.font.size = Pt(10)
+            r1.font.bold = True
+            r1.font.color.rgb = ACCENT
+            r1.font.name = "Calibri"
+            r2 = pp.add_run()
+            r2.text = text
+            r2.font.size = Pt(10)
+            r2.font.color.rgb = TEXT_DARK
+            r2.font.name = "Calibri"
+            pp.space_after = Pt(6)
+
+    # Bottom banner — three queues
+    banner_y = panel_y + panel_h + 0.20
+    add_text(slide, 0.5, banner_y, 12.5, 0.35,
+             "Three queues collect different kinds of failures",
+             font_size=14, bold=True, color=ACCENT)
+    queue_y = banner_y + 0.45
+    queue_h = 7.05 - queue_y
+    queue_w = 4.05
+    qx0 = (13.333 - 3 * queue_w - 2 * gap) / 2
+    queues = [
+        ("Review pile", "Quality / rubric failures", "Stories that failed Validator after 2 revisions."),
+        ("G0 / E0 buckets", "Classification failures", "Chunks (G0) and draft epics (E0) that didn't classify or cluster."),
+        ("Audit trail", "Call-level errors", "LLM-call failures after retry exhaustion. For diagnostics."),
+    ]
+    for i, (name, sub, desc) in enumerate(queues):
+        x = qx0 + i * (queue_w + gap)
+        bb = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                                    Inches(x), Inches(queue_y),
+                                    Inches(queue_w), Inches(queue_h))
+        bb.fill.solid()
+        bb.fill.fore_color.rgb = RGBColor(0xF1, 0xF5, 0xFA)
+        bb.line.color.rgb = BOX_LINE
+        bb.line.width = Pt(0.75)
+        tf = bb.text_frame
+        tf.word_wrap = True
+        tf.margin_left = Inches(0.12)
+        tf.margin_right = Inches(0.12)
+        tf.margin_top = Inches(0.08)
+        tf.margin_bottom = Inches(0.08)
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p1 = tf.paragraphs[0]
+        p1.alignment = PP_ALIGN.LEFT
+        r1 = p1.add_run()
+        r1.text = name
+        r1.font.size = Pt(12)
+        r1.font.bold = True
+        r1.font.color.rgb = ACCENT
+        r1.font.name = "Calibri"
+        p2 = tf.add_paragraph()
+        p2.alignment = PP_ALIGN.LEFT
+        r2 = p2.add_run()
+        r2.text = sub
+        r2.font.size = Pt(10)
+        r2.font.italic = True
+        r2.font.color.rgb = TEXT_GREY
+        r2.font.name = "Calibri"
+        p3 = tf.add_paragraph()
+        p3.alignment = PP_ALIGN.LEFT
+        r3 = p3.add_run()
+        r3.text = desc
+        r3.font.size = Pt(10)
+        r3.font.color.rgb = TEXT_DARK
+        r3.font.name = "Calibri"
+
+
 def slide_eight(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_title(slide, "What ships and the alignment ask")
@@ -1042,6 +1224,7 @@ def main():
     slide_five(prs)
     slide_six(prs)
     slide_seven(prs)
+    slide_failures(prs)
     slide_eight(prs)
 
     # add footers with slide numbers

@@ -813,6 +813,41 @@ Used at G0/E0 alarm response. Bucket > 5% rolling-window → auto-rerun Discover
 
 ---
 
+## Failure handling
+
+Failures at three levels — each has a deterministic fallback. No human intervention is required at runtime.
+
+### Per-call (LLM error or timeout)
+
+- **Trigger:** an agent's LLM call returns an error or times out.
+- **Fallback:** retry with exponential backoff (3 attempts).
+- **If persistent:** defer the item to the next batch; log the failure to the audit trail.
+- **Pipeline impact:** other items continue. No block.
+
+### Per-story (quality check fails)
+
+- **Trigger:** Validator rejects a story (closed-enum violation, shape rubric, AC granularity, source citation doesn't resolve, etc.).
+- **Fallback:** up to 2 revision attempts; the Validator drives revisions with the failed-checks list. Closed-enum violations short-circuit the revise loop (re-extraction or scope escalation).
+- **If persistent:** auto-park to the review pile (`parked/` queue) with `quality: parked` and the failed-checks list visible. In strict mode (default) the story does not reach Output A.
+- **Pipeline impact:** subsequent stories continue. No block.
+
+### Per-batch (drift / catalog issues)
+
+- **Trigger:** G0 (theme) or E0 (epic) bucket exceeds 5% rolling-window volume, or auto-park rate exceeds 15% sustained across multiple SOPs.
+- **Fallback:** auto-rerun the appropriate Discovery agent with `τ_match` lowered by 0.05 (more permissive); the residual is re-clustered; quorum re-evaluates novelties.
+- **If τ_match floor (0.50) is hit:** the drift report flags the discipline for **manual catalog re-curation**. This is a code-change to the catalog YAML — performed by an architect with repo access, not a runtime SME action.
+- **Pipeline impact:** the pipeline continues running on the rest of the corpus while the alarm cycle resolves; the drift report is informational, not blocking.
+
+### Three queues collect different kinds of failures
+
+| Queue | Captures | What's in it |
+|---|---|---|
+| **Review pile** (`parked/`) | Quality / rubric failures | Stories that failed Validator after 2 revisions. Reviewable by architect / PM; not pushed to Jira in strict mode. |
+| **G0 / E0 buckets** | Classification / clustering failures | Chunks (G0) and draft epics (E0) that didn't classify into the prior catalog and didn't cluster into a novel candidate. Drives the 5% alarm. |
+| **Audit trail** | Call-level errors after retry exhaustion | LLM timeouts, transient API failures. Diagnostic; surfaces in the drift report. |
+
+---
+
 ## Audit artifacts — concrete examples
 
 The system emits three audit artifacts alongside Outputs A/B/C. Each is referenced in the schemas above; concrete examples below.
