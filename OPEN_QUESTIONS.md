@@ -2,6 +2,15 @@
 
 Pending decisions or items awaiting stakeholder confirmation. Resolved items move to `DECISIONS.md` and get cross-referenced at the bottom of this file.
 
+> **Status note (2026-05-06):** v3.5 resolves several previously-open items via D26–D35. See `V3_5_SPEC.md` §10 for the v3.5-specific open questions list (telemetry-driven calibration of M, convergence threshold, auto-park rate budget; choice of prior discipline; sub-stages within stage 4; etc.). The items below are still relevant where unmarked, but read together with v3.5's resolutions:
+> - **Cyto SME availability** — superseded by D21 (multi-agent quorum) + D34 (exemplars optional, no SME-paired curation needed).
+> - **Sample artifacts access** — reclassified as optional under D34 (mandatory inputs are theme + epic catalogs only; Jira export is enhancement).
+> - **Variation scope confirmation** — generalized under D26 (POC scope is generalization across disciplines).
+> - **Cross-SOP synthesis recurrence threshold** — D11's ≥ 2-distinct-SOPs preserved in v3.5; clustering tuple sharpened with stage axis.
+> - **Cyto-epic-equivalence annotation source** — D34 covers this: Epic Extractor inferred via conditioned discovery (Pass 1 match score); no SME-curated table needed.
+> - **Story-shape classifier training** — v3.5 keeps zero-shot off schema definitions; first-run telemetry signals if drift exceeds 5%.
+> - **PHI handling policy** — remains open (compliance/legal decision, not architectural).
+
 ## Stakeholder / SME
 
 - [ ] **LIMS technical context** — confirmed platform = **Connect** (D15). Still open: which Connect capabilities already exist for Micro vs. need to be built? POC operates under greenfield assumption (D15); v2 extension-mode requires a Connect capability inventory we don't have yet.

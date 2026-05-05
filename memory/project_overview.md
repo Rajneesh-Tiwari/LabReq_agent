@@ -8,7 +8,13 @@ POC for Labcorp: a chat-based system that ingests Microbiology SOPs (one per cul
 
 **Why:** Labcorp wants to standardize and accelerate LIMS development for new disciplines by leveraging patterns proven out in their existing Cytology Connect build — but without manually translating Cyto artifacts.
 
-**Current architecture (v3.2 — Conditioned Discovery on top of the v3.1 multi-shape pipeline):**
+**Current architecture (v3.5 — Generalization Reframe on top of v3.4's SME-free + static-catalog operation, which itself layered on v3.2's Conditioned Discovery):**
+
+**v3.5 in one breath:** POC scope is the *generalization mechanism* across clinical-lab disciplines, not single-discipline extraction (D26). Universal stage enum `lab_stage_v1` added as a 6-value closed-enum field on Stories (D27). Persona catalog gains `actor_type ∈ {human, system, external_system}` (D28). Theme Discovery deferral lifted — runs for every new discipline (D29). Pass 3b discard quorum added for sparsely-classified inherited themes (D32). Vote threshold lowered M=4 → M=3 simple majority; min-pairwise convergence ≥ 0.8 unchanged (D33). Prior-discipline contribution narrowed: theme catalog + epic catalog mandatory; story exemplars optional; tasks unused; holdout calibration dropped — Validator runs on default thresholds tuned by first-run telemetry (D34). Intake scope-check removed — every SOP enters the pipeline (D35).
+
+**v3.4 (foundation):** Static catalogs for tests + personas (D20). SME-free operation via four primitives: multi-agent quorum (D21, replaces SME ratification), auto-park (D22, replaces escalation), prior-discipline-as-oracle (D23 — narrowed in v3.5), tightened thresholds + drift report (D24).
+
+**v3.2 (foundation):**
 
 - Cyto data is a **teaching corpus**, not a registry to match against. Curated exemplars (SOP excerpt → SME-validated story) train agents via few-shot prompting + dynamic exemplar retrieval.
 - Jira hierarchy is **3 levels**: Epic → Story → Task. Agent's deliverable is **Epic + Story only**. Tasks are out-of-scope (impl-detail, dev-authored).

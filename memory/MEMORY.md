@@ -1,4 +1,5 @@
-- [Project overview](project_overview.md) — Labcorp Connect LIMS Micro POC: agent pipeline, 4 story shapes, cross-SOP synthesis, per-culture config profiles. v3.2 adds Conditioned Discovery (warm-start theme + epic bootstrap from Cyto)
+- [Project overview](project_overview.md) — Labcorp Connect LIMS POC: agent pipeline, 4 story shapes, cross-SOP synthesis, per-discipline config profiles. v3.5 reframes scope as generalization across clinical-lab disciplines, narrows prior-discipline contribution to themes+epics+optional exemplars
+- [v3.5 architecture state](project_v35_state.md) — Current target architecture (v3.5): generalization framing, D26–D35, prior discipline narrowed, intake scope-check removed, M=3 majority quorum, Pass 3b discard quorum
 - [Cyto's role](feedback_cyto_role.md) — Cyto is a teaching corpus (curated exemplars), not a registry to match against; no REUSE/ADAPT/NEW tagging
 - [Story actionability bar](feedback_story_bar.md) — actionability is shape-aware (capability/stage-split/config-instance/cleanup); single MUST/SHALL rubric over-fits
 - [Delivery format](feedback_delivery_format.md) — prefer .docx (pandoc-built) over LaTeX/PDF for client-facing handoff; PDFs visibly AI-generated

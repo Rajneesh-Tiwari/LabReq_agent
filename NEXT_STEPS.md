@@ -2,6 +2,8 @@
 
 Concrete actions, in order.
 
+> **Status note (2026-05-06):** v3.5 spec + canonical + client deck shipped. POC scope is now generalization across clinical-lab disciplines (D26), not single-discipline extraction. SME-related items below (Steps 3, 7, 11) are superseded by v3.4's automated primitives (multi-agent quorum, prior-discipline-as-oracle, auto-park) and v3.5's narrowing (D34 — exemplars are optional; rubric uses default thresholds tuned by first-run telemetry). Steps 1–2 (drawio pages 9–12) are completed for v3.1 / v3.2. The most current operational priority is the client alignment meeting using `client_alignment_deck.pptx`, then implementation kick-off.
+
 ## Immediate
 
 1. **Build new drawio pages 9–12** capturing the v3.1 agent-based architecture:
