@@ -6,16 +6,17 @@ Usage:
 
 Produces: client_alignment_deck.pptx alongside this script.
 
-9 slides:
-  1. What we are building
-  2. What "prior discipline to learn from" means
-  3. The agents (cast of characters)
-  4. The full flow at a glance (3 phases)
-  5. Phase 1 — Setup: flowchart + theme catalog schema example
-  6. Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
-  7. Phase 3 — Combine: flowchart + capability story example
-  8. What happens when something fails (3-level fallback + 3 queues)
-  9. What ships and the alignment ask
+10 slides:
+  1.  What we are building
+  2.  What "prior discipline to learn from" means
+  3.  The agents (cast of characters)
+  4.  The full flow at a glance (3 phases)
+  5.  Phase 1 — Setup: flowchart + theme catalog schema example
+  6.  Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
+  7.  Phase 3 — Combine: flowchart + capability story example
+  8.  Inside two key agents — Validator + Dependency Resolver
+  9.  What happens when something fails (3-level fallback + 3 queues)
+  10. What ships and the alignment ask
 """
 
 from pathlib import Path
@@ -769,7 +770,7 @@ def slide_five(prs):
     count: 38
     pct: 6.3%"""
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
-                 font_size=9.5, title="Example output: theme catalog (simplified)")
+                 font_size=8.5, title="Example output: theme catalog (simplified)")
 
     # ----- Pass 1 distribution visual (replaces prior explainer text) -----
     dist_y = code_y + code_h + 0.10
@@ -932,7 +933,7 @@ def slide_six(prs):
   epic_id: EPIC-MICRO-001 (Specimen Receiving)
   quality: passed         # or: parked"""
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
-                 font_size=9.5, title="Example output: a single story (simplified)")
+                 font_size=8.5, title="Example output: a single story (simplified)")
 
     # ----- 4 shape rules (visual) — replaces prior explainer text -----
     rules_y = code_y + code_h + 0.10
@@ -1063,7 +1064,7 @@ def slide_seven(prs):
     - STORY-MICRO-0089       # from
   source_sops: [SOP-014, SOP-019, SOP-022]"""
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
-                 font_size=9.5, title="Example: a lifted capability story")
+                 font_size=8.5, title="Example: a lifted capability story")
 
     # ----- right-column visual: what "pattern in ≥ 2 SOPs" produces -----
     # Sits below the capability-story YAML (right column only — left
@@ -1114,6 +1115,133 @@ def slide_seven(prs):
 
 
 # ---- slide 8: what ships + alignment --------------------------------------
+
+def slide_inside_agents(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_title(slide, "Inside two key agents — Validator & Dependency Resolver")
+
+    add_text(slide, 0.5, 1.05, 12.5, 0.4,
+             "What these two agents actually do, beyond their one-line description on slide 3.",
+             font_size=12, italic=True, color=TEXT_GREY)
+
+    # ===== LEFT panel: Validator =====
+    left_x = 0.4
+    left_w = 6.30
+    add_box(slide, left_x, 1.55, left_w, 0.5, "Validator",
+            fill=SYS_FILL, line=SYS_LINE, font_size=15, bold=True,
+            font_color=ACCENT)
+    add_text(slide, left_x, 2.10, left_w, 0.3,
+             "Runs at gate 1 (after Story Extractor) and gate 2 (after Synthesis).",
+             font_size=10, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+
+    fx = left_x + 0.15
+    nw = left_w - 0.30
+    nh = 0.42
+    cx = fx + nw / 2
+
+    y = 2.50
+    steps = [
+        ("start",   "Receives a draft story",                                 True),
+        ("process", "1. Closed-enum check  (tests, persona, stage in catalog?)", False),
+        ("process", "2. Shape verification  (declared shape matches content?)", False),
+        ("process", "3. Apply shape-specific rubric  (4 rules — see slide 6)", False),
+    ]
+    for kind, text, bold in steps:
+        add_node(slide, fx, y, nw, nh, text, kind=kind, font_size=10, bold=bold)
+        if y > 2.50:
+            add_arrow(slide, cx, y - 0.13, cx, y, weight=1.3)
+        else:
+            pass
+        y += nh + 0.13
+    # arrow to diamond
+    add_arrow(slide, cx, y - 0.13, cx, y, weight=1.3)
+
+    # decision diamond
+    dh = 0.55
+    add_diamond(slide, fx + 1.7, y, nw - 3.4, dh,
+                "Pass all checks?", font_size=10)
+
+    # right branch: revise/park
+    rev_x = fx + nw - 1.95
+    rev_y = y + 0.05
+    add_node(slide, rev_x, rev_y, 1.85, nh - 0.05,
+             "no:  revise (≤2)\nthen auto-park",
+             kind="park", font_size=8, bold=True)
+    # arrow from diamond to revise box
+    add_arrow(slide, fx + nw - 1.7, y + dh / 2, rev_x, rev_y + (nh-0.05) / 2,
+              label="no", label_color=PARK_LINE, label_bold=True,
+              label_offset=(0.05, -0.18))
+
+    # arrow down from diamond
+    y2 = y + dh + 0.30
+    add_arrow(slide, cx, y + dh, cx, y2,
+              label="yes", label_color=END_LINE, label_bold=True,
+              label_offset=(0.05, -0.18))
+    # final node
+    add_node(slide, fx, y2, nw, nh, "Story kept (validated) → Output A",
+             kind="end", font_size=10, bold=True)
+
+    # ===== RIGHT panel: Dependency Resolver =====
+    right_x = 6.95
+    right_w = 6.00
+    add_box(slide, right_x, 1.55, right_w, 0.5, "Dependency Resolver",
+            fill=SYS_FILL, line=SYS_LINE, font_size=15, bold=True,
+            font_color=ACCENT)
+    add_text(slide, right_x, 2.10, right_w, 0.3,
+             "Takes all kept stories; outputs a topological order for sprint planning.",
+             font_size=10, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    add_text(slide, right_x, 2.42, right_w, 0.3,
+             "Each story has dependencies[] and cross_links[] — the resolver builds a DAG and sorts it.",
+             font_size=9, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+
+    # DAG: A → B and A → C; B and C → D; D → E
+    s_w, s_h = 1.05, 0.40
+    panel_cx = right_x + right_w / 2
+
+    # A at top center
+    a_x = panel_cx - s_w / 2
+    a_y = 2.85
+    add_box(slide, a_x, a_y, s_w, s_h, "Story A",
+            fill=BOX_FILL, line=BOX_LINE, font_size=10, bold=True)
+
+    # B (left) and C (right) in middle row
+    bc_y = a_y + s_h + 0.40
+    b_x = right_x + 0.5
+    c_x = right_x + right_w - s_w - 0.5
+    add_box(slide, b_x, bc_y, s_w, s_h, "Story B",
+            fill=BOX_FILL, line=BOX_LINE, font_size=10, bold=True)
+    add_box(slide, c_x, bc_y, s_w, s_h, "Story C",
+            fill=BOX_FILL, line=BOX_LINE, font_size=10, bold=True)
+
+    # D below center
+    d_x = panel_cx - s_w / 2
+    d_y = bc_y + s_h + 0.40
+    add_box(slide, d_x, d_y, s_w, s_h, "Story D",
+            fill=BOX_FILL, line=BOX_LINE, font_size=10, bold=True)
+
+    # E below D
+    e_x = d_x
+    e_y = d_y + s_h + 0.40
+    add_box(slide, e_x, e_y, s_w, s_h, "Story E",
+            fill=BOX_FILL, line=BOX_LINE, font_size=10, bold=True)
+
+    # Dependency arrows (A→B, A→C, B→D, C→D, D→E)
+    add_arrow(slide, a_x + s_w/2, a_y + s_h, b_x + s_w/2, bc_y, weight=1.2)
+    add_arrow(slide, a_x + s_w/2, a_y + s_h, c_x + s_w/2, bc_y, weight=1.2)
+    add_arrow(slide, b_x + s_w/2, bc_y + s_h, d_x + s_w/2, d_y, weight=1.2)
+    add_arrow(slide, c_x + s_w/2, bc_y + s_h, d_x + s_w/2, d_y, weight=1.2)
+    add_arrow(slide, d_x + s_w/2, d_y + s_h, e_x + s_w/2, e_y, weight=1.2)
+
+    # Output strip below the DAG
+    out_y = e_y + s_h + 0.20
+    add_box(slide, right_x, out_y, right_w, 0.45,
+            "Output:   1. A  →  2. B  →  3. C  →  4. D  →  5. E",
+            fill=END_FILL, line=END_LINE, font_size=11, bold=True,
+            font_color=ACCENT)
+
 
 def slide_failures(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -1343,6 +1471,7 @@ def main():
     slide_five(prs)
     slide_six(prs)
     slide_seven(prs)
+    slide_inside_agents(prs)
     slide_failures(prs)
     slide_eight(prs)
 
