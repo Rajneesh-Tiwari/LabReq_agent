@@ -273,43 +273,6 @@ def add_code_box(slide, left, top, width, height, content, font_size=10,
     return box
 
 
-def add_step_box(slide, left, top, width, height, number, text,
-                 fill=BOX_FILL, line=BOX_LINE, number_color=ACCENT,
-                 font_size=11):
-    box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
-                                 Inches(left), Inches(top),
-                                 Inches(width), Inches(height))
-    box.fill.solid()
-    box.fill.fore_color.rgb = fill
-    box.line.color.rgb = line
-    box.line.width = Pt(1.0)
-    tf = box.text_frame
-    tf.word_wrap = True
-    tf.margin_left = Inches(0.5)
-    tf.margin_right = Inches(0.1)
-    tf.margin_top = Inches(0.05)
-    tf.margin_bottom = Inches(0.05)
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-    p = tf.paragraphs[0]
-    p.alignment = PP_ALIGN.LEFT
-    run = p.add_run()
-    run.text = text
-    run.font.size = Pt(font_size)
-    run.font.color.rgb = TEXT_DARK
-    run.font.name = "Calibri"
-    badge_d = 0.36
-    badge = slide.shapes.add_shape(MSO_SHAPE.OVAL,
-                                   Inches(left + 0.07),
-                                   Inches(top + (height - badge_d) / 2),
-                                   Inches(badge_d), Inches(badge_d))
-    badge.fill.solid()
-    badge.fill.fore_color.rgb = number_color
-    badge.line.fill.background()
-    _set_text(badge, str(number), font_size=11, bold=True,
-              color=RGBColor(0xFF, 0xFF, 0xFF), align=PP_ALIGN.CENTER)
-    return box
-
-
 # ---- slide 1 --------------------------------------------------------------
 
 def slide_one(prs):
@@ -445,12 +408,13 @@ def slide_two(prs):
              "Tests   •   Roles   •   The new discipline's own SOPs   •   "
              "Tasks (out of scope; dev team owns decomposition)",
              font_size=11, color=TEXT_GREY)
-    add_text(slide, 0.5, 6.40, 12.5, 0.30,
-             "Sourcing:  theme + epic catalogs are snapshotted from Cytology's existing Connect build (the seminal prior).",
+    add_text(slide, 0.5, 6.30, 12.5, 0.45,
+             "Sourcing:  theme + epic catalogs are typically snapshotted from a validated prior discipline (Cytology, in our case).  "
+             "If no prior is available, a one-time cold-start SOP analysis discovers themes and epics from scratch — that's how Cytology's catalog was built originally.",
              font_size=10, italic=True, color=ACCENT)
-    add_text(slide, 0.5, 6.72, 12.5, 0.30,
+    add_text(slide, 0.5, 6.78, 12.5, 0.30,
              "Quality-check thresholds use defaults tuned by first-run telemetry — no holdout calibration against the prior discipline is needed.",
-             font_size=10, italic=True, color=TEXT_GREY)
+             font_size=9, italic=True, color=TEXT_GREY)
 
 
 # ---- slide 3: the agents --------------------------------------------------
@@ -460,7 +424,7 @@ def slide_three(prs):
     add_title(slide, "The agents — cast of characters")
 
     add_text(slide, 0.5, 1.1, 12.5, 0.5,
-             "Six agents do the work. Plus a 5-reviewer panel that votes "
+             "Six agents do the work. Plus a quorum — 5 conditional checks evaluated "
              "when admitting new categories.",
              font_size=13, color=TEXT_DARK)
 
@@ -558,33 +522,33 @@ def slide_three(prs):
 
     callout_y = table_y + table_h + 0.18
     callout_h = 7.05 - callout_y
-    # Quorum panel callout — shows 5 reviewer agents running IN PARALLEL
+    # Quorum callout — generalized to conditional logic (5 parallel checks)
     add_text(slide, 0.4, callout_y, 12.55, 0.3,
-             "Quorum panel — 5 reviewer agents running IN PARALLEL  (used inside Theme Discovery and Epic Extractor)",
+             "Quorum  —  conditional logic with 5 parallel checks  (used inside Theme Discovery and Epic Extractor)",
              font_size=12, bold=True, color=ACCENT)
-    # 5 small boxes side by side
+    # 5 small boxes side by side — condition labels
     qp_y = callout_y + 0.32
     qp_h = 0.55
     qp_gap = 0.08
     qp_total_w = 12.55
     qp_w = (qp_total_w - 4 * qp_gap) / 5
-    angles = [
-        "1. Is it coherent\nas a new theme?",
-        "2. Is it distinct\nfrom existing?",
-        "3. Is the description\nsharp enough?",
-        "4. Are the cluster\nmembers consistent?",
-        "5. Would admitting\nfragment the catalog?",
+    conditions = [
+        "1. Coherence\nas a new theme",
+        "2. Distinctness\nfrom existing",
+        "3. Description\nsharpness",
+        "4. Cluster member\nconsistency",
+        "5. No catalog\nfragmentation",
     ]
-    for i, angle in enumerate(angles):
+    for i, cond in enumerate(conditions):
         x = 0.4 + i * (qp_w + qp_gap)
-        add_box(slide, x, qp_y, qp_w, qp_h, angle,
+        add_box(slide, x, qp_y, qp_w, qp_h, cond,
                 fill=SYS_FILL, line=SYS_LINE,
                 font_size=9, bold=False)
     # below the 5 boxes: vote-aggregation note
     note_y = qp_y + qp_h + 0.05
     note_h = 7.05 - note_y
     add_text(slide, 0.4, note_y, 12.55, note_h,
-             "All 5 vote in parallel. Need 3 of 5 agreeing on the same action; their descriptions must be similar enough.  "
+             "5 conditions evaluated in parallel. Need 3 of 5 to clear plus consensus on the proposed entry.  "
              "Otherwise the candidate goes to the review pile for the next round.",
              font_size=10, italic=True, color=TEXT_DARK,
              align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
@@ -658,20 +622,26 @@ def slide_five(prs):
     # ----- left half: flowchart (compact for footer fit) -----
     fx = 0.5
     nw = 3.0
-    nh = 0.45
+    nh = 0.42
     cx = fx + nw / 2
-    dh = 0.6
+    dh = 0.55
+    gap = 0.10
+    post_diamond = 0.22
 
     y1 = 1.55
     add_node(slide, fx, y1, nw, nh, "Sample SOPs (~20)\n+ prior discipline's themes",
              kind="start", font_size=9, bold=True)
-    y2 = y1 + nh + 0.15
-    add_node(slide, fx, y2, nw, nh, "Tag chunks: theme, test, persona, stage",
+    # NEW: Section SOP into logical chunks (separate from tagging)
+    y_chunk = y1 + nh + gap
+    add_node(slide, fx, y_chunk, nw, nh, "Section each SOP\ninto logical chunks",
              kind="process", font_size=9)
-    y3 = y2 + nh + 0.15
-    add_node(slide, fx, y3, nw, nh, "Compare each chunk to prior discipline's themes",
+    y2 = y_chunk + nh + gap
+    add_node(slide, fx, y2, nw, nh, "Tag chunks:\ntheme, test, persona, stage",
              kind="process", font_size=9)
-    y4 = y3 + nh + 0.15
+    y3 = y2 + nh + gap
+    add_node(slide, fx, y3, nw, nh, "Compare each chunk to\nprior discipline's themes",
+             kind="process", font_size=9)
+    y4 = y3 + nh + gap
     add_diamond(slide, fx + 0.4, y4, nw - 0.8, dh,
                 "Score ≥ match\nthreshold?", font_size=9)
     inh_x = fx + nw + 0.4
@@ -679,12 +649,12 @@ def slide_five(prs):
     add_node(slide, inh_x, inh_y, 2.5, nh,
              "Inherit theme\n(into new catalog)",
              kind="side", font_size=9, bold=True)
-    y6 = y4 + dh + 0.3
+    y6 = y4 + dh + post_diamond
     add_node(slide, fx, y6, nw, nh, "Cluster residual into candidates",
              kind="process", font_size=9)
-    # 5 parallel quorum agents (instead of one box)
-    y7 = y6 + nh + 0.15
-    qph = 0.50
+    # 5 parallel conditional checks (relabeled from "reviewer agents")
+    y7 = y6 + nh + gap
+    qph = 0.42
     qpw_total = nw
     qpw_each = (qpw_total - 4 * 0.04) / 5
     for i in range(5):
@@ -692,25 +662,26 @@ def slide_five(prs):
         add_box(slide, qx, y7, qpw_each, qph, str(i + 1),
                 fill=SYS_FILL, line=SYS_LINE,
                 font_size=11, bold=True)
-    # label below the row of 5
-    add_text(slide, fx, y7 + qph + 0.02, nw, 0.20,
-             "5 reviewers vote in parallel",
+    # label below the row of 5 — generalized to conditional logic
+    add_text(slide, fx, y7 + qph + 0.01, nw, 0.18,
+             "5 conditional checks evaluated in parallel",
              font_size=8, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
-    y8 = y7 + qph + 0.30
+    y8 = y7 + qph + 0.25
     add_diamond(slide, fx + 0.4, y8, nw - 0.8, dh,
-                "3 of 5 agree?", font_size=9)
+                "3 of 5 conditions\ncleared?", font_size=9)
     park_x = fx + nw + 0.4
     park_y = y8 + (dh - nh) / 2
     add_node(slide, park_x, park_y, 2.5, nh,
              "Park to review pile\n(retry next cycle)",
              kind="park", font_size=9, bold=True)
-    y9 = y8 + dh + 0.3
+    y9 = y8 + dh + post_diamond
     add_node(slide, fx, y9, nw, nh, "New discipline's theme catalog",
              kind="end", font_size=10, bold=True)
 
     # arrows in the flowchart
-    add_arrow(slide, cx, y1 + nh, cx, y2)
+    add_arrow(slide, cx, y1 + nh, cx, y_chunk)
+    add_arrow(slide, cx, y_chunk + nh, cx, y2)
     add_arrow(slide, cx, y2 + nh, cx, y3)
     add_arrow(slide, cx, y3 + nh, cx, y4)
     # diamond branches
@@ -863,54 +834,67 @@ def slide_six(prs):
              color=RGBColor(0x60, 0x68, 0x70),
              align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 
+    # compressed spacing to fit 6 process steps + diamond + final
+    nh_local = 0.50
+    gap = 0.15
+    dh_local = 0.60
+    post_diamond = 0.35
+
     y1 = 1.55
-    add_node(slide, fx, y1, nw, nh, "SOP arrives", kind="start",
+    add_node(slide, fx, y1, nw, nh_local, "SOP arrives", kind="start",
              font_size=10, bold=True)
 
-    y2 = y1 + 0.75
-    add_node(slide, fx, y2, nw, nh,
+    # NEW: Section SOP into logical chunks (separate from tagging)
+    y_chunk = y1 + nh_local + gap
+    add_node(slide, fx, y_chunk, nw, nh_local,
+             "Section SOP into logical chunks",
+             kind="process", font_size=10)
+
+    y2 = y_chunk + nh_local + gap
+    add_node(slide, fx, y2, nw, nh_local,
              "Tag chunks: theme, test, persona, stage",
              kind="process", font_size=10)
 
-    y3 = y2 + 0.75
-    add_node(slide, fx, y3, nw, nh,
+    y3 = y2 + nh_local + gap
+    add_node(slide, fx, y3, nw, nh_local,
              "Epic Extractor: draft + match",
              kind="agent", font_size=10, bold=True)
 
-    y4 = y3 + 0.75
-    add_node(slide, fx, y4, nw, nh,
+    y4 = y3 + nh_local + gap
+    add_node(slide, fx, y4, nw, nh_local,
              "Story Extractor: draft\n(uses exemplars if available)",
              kind="agent", font_size=10, bold=True)
 
-    y5 = y4 + 0.85
-    add_node(slide, fx, y5, nw, nh,
+    y5 = y4 + nh_local + gap
+    add_node(slide, fx, y5, nw, nh_local,
              "Validator: quality-check (shape rules)",
              kind="agent", font_size=10, bold=True)
 
-    y6 = y5 + 0.75
-    add_diamond(slide, fx + 0.4, y6, nw - 0.8, dh,
+    y6 = y5 + nh_local + gap
+    add_diamond(slide, fx + 0.4, y6, nw - 0.8, dh_local,
                 "Pass quality?", font_size=10)
     # fail branch (right)
     fail_x = fx + nw + 0.4
-    fail_y = y6 + 0.1
-    add_node(slide, fail_x, fail_y, 2.4, nh,
+    fail_y = y6 + 0.05
+    add_node(slide, fail_x, fail_y, 2.4, nh_local - 0.05,
              "Revise (≤2 tries)\nthen review pile",
              kind="park", font_size=10, bold=True)
 
-    y7 = y6 + dh + 0.45
-    add_node(slide, fx, y7, nw, nh, "Story kept (validated)",
+    y7 = y6 + dh_local + post_diamond
+    add_node(slide, fx, y7, nw, nh_local, "Story kept (validated)",
              kind="end", font_size=11, bold=True)
 
     # arrows
-    add_arrow(slide, cx, y1 + nh, cx, y2)
-    add_arrow(slide, cx, y2 + nh, cx, y3)
-    add_arrow(slide, cx, y3 + nh, cx, y4)
-    add_arrow(slide, cx, y4 + nh, cx, y5)
-    add_arrow(slide, cx, y5 + nh, cx, y6)
-    add_arrow(slide, fx + nw - 0.4, y6 + dh / 2, fail_x, fail_y + nh / 2,
+    add_arrow(slide, cx, y1 + nh_local, cx, y_chunk)
+    add_arrow(slide, cx, y_chunk + nh_local, cx, y2)
+    add_arrow(slide, cx, y2 + nh_local, cx, y3)
+    add_arrow(slide, cx, y3 + nh_local, cx, y4)
+    add_arrow(slide, cx, y4 + nh_local, cx, y5)
+    add_arrow(slide, cx, y5 + nh_local, cx, y6)
+    add_arrow(slide, fx + nw - 0.4, y6 + dh_local / 2, fail_x, fail_y + (nh_local - 0.05) / 2,
               label="no", label_color=PARK_LINE, label_bold=True,
               label_offset=(0.05, -0.18))
-    add_arrow(slide, cx, y6 + dh, cx, y7,
+    add_arrow(slide, cx, y6 + dh_local, cx, y7,
               label="yes", label_color=END_LINE, label_bold=True,
               label_offset=(0.05, -0.18))
 
@@ -1123,7 +1107,7 @@ def slide_seven(prs):
 
 # ---- slide 8: what ships + alignment --------------------------------------
 
-def slide_four_shape_examples(prs):
+def slide_shape_examples(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_title(slide, "The 4 story shapes — one example each")
 
@@ -1262,16 +1246,15 @@ def slide_inside_agents(prs):
         add_node(slide, fx, y, nw, nh, text, kind=kind, font_size=10, bold=bold)
         if y > 2.50:
             add_arrow(slide, cx, y - 0.13, cx, y, weight=1.3)
-        else:
-            pass
         y += nh + 0.13
-    # arrow to diamond
-    add_arrow(slide, cx, y - 0.13, cx, y, weight=1.3)
 
     # decision diamond — narrowed so it doesn't overlap the right branch
     dh = 0.55
     diamond_x = fx + 1.95
     diamond_w = nw - 4.10
+    dcx = diamond_x + diamond_w / 2  # diamond's own midline (centers arrows on its vertices)
+    # arrow from last process box → diamond top vertex (using dcx, not panel cx)
+    add_arrow(slide, dcx, y - 0.13, dcx, y, weight=1.3)
     add_diamond(slide, diamond_x, y, diamond_w, dh,
                 "Pass all checks?", font_size=10)
 
@@ -1288,9 +1271,9 @@ def slide_inside_agents(prs):
               label="no", label_color=PARK_LINE, label_bold=True,
               label_offset=(0.0, -0.22))
 
-    # arrow down from diamond
+    # arrow down from diamond bottom vertex (using dcx, not panel cx)
     y2 = y + dh + 0.30
-    add_arrow(slide, cx, y + dh, cx, y2,
+    add_arrow(slide, dcx, y + dh, dcx, y2,
               label="yes", label_color=END_LINE, label_bold=True,
               label_offset=(0.05, -0.18))
     # final node
@@ -1619,7 +1602,7 @@ def slide_failures(prs):
         r3.font.name = "Calibri"
 
 
-def slide_eight(prs):
+def slide_alignment_ask(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_title(slide, "What ships and the alignment ask")
 
@@ -1742,11 +1725,11 @@ def main():
     slide_five(prs)
     slide_six(prs)
     slide_seven(prs)
-    slide_four_shape_examples(prs)
+    slide_shape_examples(prs)
     slide_inside_agents(prs)
     slide_validator_walkthrough(prs)
     slide_failures(prs)
-    slide_eight(prs)
+    slide_alignment_ask(prs)
 
     # add footers with slide numbers
     total = len(prs.slides)
