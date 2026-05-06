@@ -338,11 +338,41 @@ def slide_one(prs):
 
     add_text(slide, 0.5, 4.4, 12.5, 0.4,
              "Why this matters", font_size=18, bold=True, color=ACCENT)
-    add_bullets(slide, 0.7, 4.9, 12.0, 1.5, [
+    add_bullets(slide, 0.7, 4.9, 12.0, 1.4, [
         "Today: every new SOP → manual expert review → hand-written stories. Slow, costly, inconsistent.",
         "With this system: SOPs in, structured stories out. Quality is built into the rules, not into one expert's review.",
         "Same system, any clinical discipline. Each new discipline is a configuration change, not an engineering project.",
     ], font_size=13)
+
+    # ----- mini visual: what's actually in the dev backlog -----
+    tree_y = 6.45
+    add_text(slide, 0.5, tree_y, 12.5, 0.20,
+             "What's inside the Dev backlog (Jira hierarchy)",
+             font_size=11, italic=True, bold=True, color=ACCENT)
+    row_y = tree_y + 0.27
+    row_h = 0.45
+
+    ep_x, ep_w = 2.4, 1.4
+    add_box(slide, ep_x, row_y, ep_w, row_h, "Epic",
+            fill=PHASE_FILL, line=PHASE_LINE, font_size=12, bold=True)
+    st_w = 1.4
+    gap = 0.15
+    st_x0 = ep_x + ep_w + 0.50
+    for i in range(3):
+        x = st_x0 + i * (st_w + gap)
+        add_box(slide, x, row_y, st_w, row_h, "Story",
+                fill=OUT_FILL, line=OUT_LINE, font_size=12, bold=True)
+        add_arrow(slide, ep_x + ep_w, row_y + row_h / 2,
+                  x, row_y + row_h / 2, weight=1.0)
+    # Task box (faded, marked out of scope)
+    task_x = st_x0 + 3 * (st_w + gap) + 0.30
+    task_w = 2.8
+    add_box(slide, task_x, row_y, task_w, row_h,
+            "Task    (out of scope — dev team owns)",
+            fill=RGBColor(0xF1, 0xF1, 0xF1),
+            line=RGBColor(0xB0, 0xB0, 0xB0),
+            font_size=10, bold=False,
+            font_color=RGBColor(0x80, 0x80, 0x80))
 
 
 # ---- slide 2 --------------------------------------------------------------
@@ -706,7 +736,7 @@ def slide_five(prs):
     code_x = 7.7
     code_y = 1.6
     code_w = 5.4
-    code_h = 4.7
+    code_h = 4.0
     yaml_text = """new_lab_theme_catalog:
   catalog_id: micro_v1
   parent_catalog: cyto_v1     # prior discipline
@@ -741,12 +771,44 @@ def slide_five(prs):
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
                  font_size=9.5, title="Example output: theme catalog (simplified)")
 
-    # short explainer below the yaml
-    add_text(slide, code_x, code_y + code_h + 0.1, code_w, 0.65,
-             "Read this top-down: most categories carry over from Cytology. "
-             "Two new ones (Susceptibility Testing, Biosafety Containment) "
-             "earned their place via quorum vote with evidence.",
-             font_size=10, italic=True, color=TEXT_GREY)
+    # ----- Pass 1 distribution visual (replaces prior explainer text) -----
+    dist_y = code_y + code_h + 0.10
+    add_text(slide, code_x, dist_y, code_w, 0.22,
+             "What Pass 1 produced  (Microbiology classified vs Cytology's themes)",
+             font_size=10, bold=True, color=ACCENT)
+    bucket_y = dist_y + 0.27
+    bucket_h = 0.42
+    inherited = [
+        ("G1", 145), ("G2", 88), ("G3", 60), ("G4", 52),
+        ("G5", 44), ("G6", 30), ("G7", 38), ("G8", 20),
+    ]
+    residual = ("Residual", 123)
+    n = len(inherited)
+    avail_w = code_w
+    div_gap = 0.12
+    inh_total_w = avail_w * 0.62
+    res_w = avail_w * 0.34
+    inh_box_w = (inh_total_w - (n - 1) * 0.04) / n
+    for i, (name, cnt) in enumerate(inherited):
+        x = code_x + i * (inh_box_w + 0.04)
+        add_box(slide, x, bucket_y, inh_box_w, bucket_h,
+                f"{name}\n{cnt}",
+                fill=BOX_FILL, line=BOX_LINE,
+                font_size=8, bold=True)
+    res_x = code_x + inh_total_w + div_gap
+    add_box(slide, res_x, bucket_y, res_w - 0.04, bucket_h,
+            f"{residual[0]}\n{residual[1]} chunks",
+            fill=PARK_FILL, line=PARK_LINE,
+            font_size=9, bold=True)
+    # tiny caption hint just under the bucket row
+    add_text(slide, code_x, bucket_y + bucket_h + 0.02, inh_total_w, 0.18,
+             "inherited from Cytology (477 chunks total)",
+             font_size=8, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    add_text(slide, res_x, bucket_y + bucket_h + 0.02, res_w - 0.04, 0.18,
+             "feeds Pass 2 cluster",
+             font_size=8, italic=True, color=PARK_LINE,
+             align=PP_ALIGN.CENTER)
 
 
 # ---- slide 6: phase 2 — flowchart + story example ------------------------
@@ -848,7 +910,7 @@ def slide_six(prs):
     code_x = 7.7
     code_y = 1.55
     code_w = 5.4
-    code_h = 4.5
+    code_h = 3.9
     yaml_text = """story:
   id: STORY-MICRO-0042
   shape: capability       # one of:
@@ -872,11 +934,31 @@ def slide_six(prs):
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
                  font_size=9.5, title="Example output: a single story (simplified)")
 
-    add_text(slide, code_x, code_y + code_h + 0.05, code_w, 0.85,
-             "Every story carries: shape, tests, role, stage, source citation, "
-             "and quality verdict. Closed-enum fields are checked against the "
-             "catalogs — out-of-list values are rejected, no questions asked.",
-             font_size=10, italic=True, color=TEXT_GREY)
+    # ----- 4 shape rules (visual) — replaces prior explainer text -----
+    rules_y = code_y + code_h + 0.10
+    add_text(slide, code_x, rules_y, code_w, 0.25,
+             "The 4 quality rules — one per story shape",
+             font_size=11, bold=True, color=ACCENT)
+    shape_items = [
+        ("Capability",      "MUST/SHALL\n+ parameters"),
+        ("Stage-split",     "Stage in title\n+ siblings"),
+        ("Config-instance", "Concrete typed values\nno MUST/SHALL"),
+        ("Cleanup",         "Named artifact\n+ before/after"),
+    ]
+    n = len(shape_items)
+    gap = 0.06
+    cards_y = rules_y + 0.30
+    card_w = (code_w - (n - 1) * gap) / n
+    head_h = 0.25
+    body_h = 0.55
+    for i, (head, body) in enumerate(shape_items):
+        x = code_x + i * (card_w + gap)
+        add_box(slide, x, cards_y, card_w, head_h, head,
+                fill=SYS_FILL, line=SYS_LINE,
+                font_size=10, bold=True, font_color=ACCENT)
+        add_box(slide, x, cards_y + head_h, card_w, body_h, body,
+                fill=RGBColor(0xFF, 0xFF, 0xFF), line=SYS_LINE,
+                font_size=8)
 
 
 # ---- slide 7: phase 3 — flowchart + capability story example ------------
@@ -983,15 +1065,52 @@ def slide_seven(prs):
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
                  font_size=9.5, title="Example: a lifted capability story")
 
-    # continuous-monitoring banner
-    cont_y = 5.8
-    add_box(slide, code_x, cont_y, code_w, 0.7,
-            "Continuous monitoring (alongside): drift report; "
-            "alarm when review pile or unclassified bucket > 5%; auto-rerun "
-            "with looser threshold on alarm.",
-            fill=RGBColor(0xF1, 0xF5, 0xFA), line=BOX_LINE,
-            font_size=10, font_color=TEXT_DARK,
-            align=PP_ALIGN.LEFT, shape_type=MSO_SHAPE.RECTANGLE)
+    # ----- right-column visual: what "pattern in ≥ 2 SOPs" produces -----
+    # Sits below the capability-story YAML (right column only — left
+    # column has the flowchart all the way down).
+    viz_y = 5.7
+    add_text(slide, code_x, viz_y, code_w, 0.25,
+             "What \"pattern in ≥ 2 SOPs\" produces (worked example)",
+             font_size=11, bold=True, color=ACCENT)
+
+    # 2 source stories (left, stacked)
+    src_x = code_x
+    src_w = 1.30
+    src_h = 0.35
+    src_y_top = viz_y + 0.32
+    src_y_bot = src_y_top + src_h + 0.05
+    add_box(slide, src_x, src_y_top, src_w, src_h,
+            "Story · SOP-007", fill=BOX_FILL, line=BOX_LINE,
+            font_size=9, bold=True)
+    add_box(slide, src_x, src_y_bot, src_w, src_h,
+            "Story · SOP-014", fill=BOX_FILL, line=BOX_LINE,
+            font_size=9, bold=True)
+
+    # Cluster (middle)
+    clu_x = src_x + src_w + 0.30
+    clu_w = 1.55
+    clu_y = src_y_top + 0.08
+    clu_h = src_y_bot + src_h - clu_y - 0.08
+    add_box(slide, clu_x, clu_y, clu_w, clu_h,
+            "Cluster:\n2 distinct SOPs\n≥ 2 → lift",
+            fill=SYS_FILL, line=SYS_LINE, font_size=9, bold=True)
+
+    # Capability (right)
+    cap_x = clu_x + clu_w + 0.30
+    cap_w = code_x + code_w - cap_x
+    cap_y = clu_y
+    cap_h = clu_h
+    add_box(slide, cap_x, cap_y, cap_w, cap_h,
+            "Capability story\n+ parameters",
+            fill=END_FILL, line=END_LINE, font_size=10, bold=True)
+
+    # arrows
+    add_arrow(slide, src_x + src_w + 0.02, src_y_top + src_h / 2,
+              clu_x - 0.02, clu_y + clu_h * 0.35, weight=1.2)
+    add_arrow(slide, src_x + src_w + 0.02, src_y_bot + src_h / 2,
+              clu_x - 0.02, clu_y + clu_h * 0.65, weight=1.2)
+    add_arrow(slide, clu_x + clu_w + 0.02, clu_y + clu_h / 2,
+              cap_x - 0.02, cap_y + cap_h / 2, weight=1.5)
 
 
 # ---- slide 8: what ships + alignment --------------------------------------
