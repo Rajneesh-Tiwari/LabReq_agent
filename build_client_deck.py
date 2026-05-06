@@ -6,7 +6,7 @@ Usage:
 
 Produces: client_alignment_deck.pptx alongside this script.
 
-10 slides:
+12 slides:
   1.  What we are building
   2.  What "prior discipline to learn from" means
   3.  The agents (cast of characters)
@@ -14,9 +14,12 @@ Produces: client_alignment_deck.pptx alongside this script.
   5.  Phase 1 — Setup: flowchart + theme catalog schema example
   6.  Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
   7.  Phase 3 — Combine: flowchart + capability story example
-  8.  Inside two key agents — Validator + Dependency Resolver
-  9.  What happens when something fails (3-level fallback + 3 queues)
-  10. What ships and the alignment ask
+  8.  The 4 story shapes — one example each (capability / stage-split /
+      configuration-instance / cleanup)
+  9.  Inside two key agents — Validator + Dependency Resolver
+  10. Validator at work — sample story walks through the checks
+  11. What happens when something fails (3-level fallback + 3 queues)
+  12. What ships and the alignment ask
 """
 
 from pathlib import Path
@@ -1116,6 +1119,109 @@ def slide_seven(prs):
 
 # ---- slide 8: what ships + alignment --------------------------------------
 
+def slide_four_shape_examples(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_title(slide, "The 4 story shapes — one example each")
+
+    add_text(slide, 0.5, 1.05, 12.5, 0.40,
+             "Different shapes have different quality rules (slide 6). "
+             "These examples show what makes each shape that shape.",
+             font_size=12, italic=True, color=TEXT_GREY)
+
+    grid_x = 0.4
+    grid_y = 1.55
+    h_gap = 0.18
+    v_gap = 0.18
+    card_w = (13.333 - 2 * grid_x - h_gap) / 2
+    card_h = (7.05 - grid_y - v_gap) / 2
+    head_h = 0.36
+
+    examples = [
+        ("CAPABILITY",
+         "MUST/SHALL  +  configurable parameters",
+         """title:  "Validate received specimens
+        against open orders"
+shape:   capability
+persona: lims
+stage:   accessioning_verification
+tests:   [gram_stain, blood_culture]
+
+AC1:  When specimen received with
+      accession, system MUST match
+      against open order
+AC2:  When no match found within 24h,
+      system MUST flag for review"""),
+        ("WORKFLOW-STAGE-SPLIT",
+         "Stage in title  +  sibling stories enumerated",
+         """title:  "PHI update — after results
+        are reported"
+shape:   workflow-stage-split
+persona: supervisor
+stage:   reporting_case_closure
+
+AC1:  When PHI corrected on finalised
+      report, system MUST regenerate
+      with audit trail entry
+AC2:  When EHR has report, system MUST
+      send corrected-result message
+
+cross_links: STORY-0076 (before work),
+             STORY-0077 (after work started)"""),
+        ("CONFIGURATION-INSTANCE",
+         "Concrete typed values  ·  no MUST/SHALL pretense",
+         """title:  "Blood culture incubation
+        — bottle parameters"
+shape:   configuration-instance
+tests:   [blood_culture_incubation]
+persona: null     stage: null
+
+AC1:  When bottle received, configure
+      incubation
+      expected_value:
+        temperature_c:    35
+        duration_h:       120
+        agitation_rpm:    220
+        alert_threshold_h: 24"""),
+        ("CLEANUP",
+         "Named artifact  +  before/after observable",
+         """title:  "Remove obsolete
+        'Pending Pathologist Review'
+        status from results screen"
+shape:   cleanup
+persona: null     stage: null
+
+AC1:  When viewing the results screen,
+      the option MUST NOT appear
+AC2:  When existing case has the status,
+      MUST migrate to 'Pending Review'
+      with audit trail
+
+edge_cases_handled:
+  - existing case with the status
+  - in-flight orders with the status"""),
+    ]
+
+    for i, (shape_name, feature, body_text) in enumerate(examples):
+        col = i % 2
+        row = i // 2
+        x = grid_x + col * (card_w + h_gap)
+        y = grid_y + row * (card_h + v_gap)
+        # Header strip
+        add_box(slide, x, y, card_w, head_h, shape_name,
+                fill=SYS_FILL, line=SYS_LINE,
+                font_size=13, bold=True, font_color=ACCENT)
+        # Sub-feature
+        add_text(slide, x + 0.05, y + head_h + 0.02, card_w - 0.10, 0.22,
+                 feature,
+                 font_size=10, italic=True, color=TEXT_GREY,
+                 align=PP_ALIGN.CENTER)
+        # Body code-style box
+        body_y = y + head_h + 0.30
+        body_h = card_h - head_h - 0.30
+        add_code_box(slide, x, body_y, card_w, body_h, body_text,
+                     font_size=8.5)
+
+
 def slide_inside_agents(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_title(slide, "Inside two key agents — Validator & Dependency Resolver")
@@ -1241,6 +1347,112 @@ def slide_inside_agents(prs):
             "Output:   1. A  →  2. B  →  3. C  →  4. D  →  5. E",
             fill=END_FILL, line=END_LINE, font_size=11, bold=True,
             font_color=ACCENT)
+
+
+def slide_validator_walkthrough(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_title(slide, "Validator at work — a sample story walks through the checks")
+
+    add_text(slide, 0.5, 1.05, 12.5, 0.40,
+             "Each check is explicit. Failure on attempt 1; pass on revise (attempt 2).",
+             font_size=12, italic=True, color=TEXT_GREY)
+
+    # 2 cards side by side: ATTEMPT 1 (left, fail) and ATTEMPT 2 (right, pass)
+    grid_y = 1.55
+    h_gap = 0.20
+    card_w = (13.333 - 0.8 - h_gap) / 2
+
+    # ===== LEFT: Attempt 1 (fail) =====
+    a1_x = 0.4
+    add_box(slide, a1_x, grid_y, card_w, 0.40,
+            "ATTEMPT 1   ✗   draft",
+            fill=PARK_FILL, line=PARK_LINE,
+            font_size=14, bold=True, font_color=PARK_LINE)
+
+    a1_yaml = """story (draft):
+  shape:   capability
+  title:   "Validate accession appropriately"
+  persona: lims
+  tests:   [gram_stain]
+  stage:   accessioning_verification
+  AC: "When specimen received, system MUST
+       validate appropriately"
+  source:  SOP-MICRO-014, lines 23-31"""
+    a1_code_y = grid_y + 0.45
+    add_code_box(slide, a1_x, a1_code_y, card_w, 1.55, a1_yaml,
+                 font_size=8.5)
+
+    checks_y = a1_code_y + 1.65
+    add_text(slide, a1_x + 0.05, checks_y, card_w - 0.10, 0.25,
+             "Validator checks:",
+             font_size=11, bold=True, color=ACCENT)
+
+    a1_checks = [
+        ("✓", "1. Closed-enum check  —  tests, persona, stage all in catalog", END_LINE, False),
+        ("✓", "2. Shape verification  —  declared 'capability' matches content", END_LINE, False),
+        ("✗", "3. Shape rubric  —  capability:no_ambiguous_quantifiers fails on 'appropriately'", PARK_LINE, True),
+    ]
+    cy = checks_y + 0.32
+    for mark, text, color, bold in a1_checks:
+        add_text(slide, a1_x + 0.10, cy, card_w - 0.20, 0.30,
+                 f"{mark}    {text}",
+                 font_size=10, color=color, bold=bold)
+        cy += 0.32
+
+    verdict_y = cy + 0.10
+    add_box(slide, a1_x, verdict_y, card_w, 0.40,
+            "→ Revise  (attempt 1 of 2)  —  Story Extractor reworks the AC",
+            fill=PARK_FILL, line=PARK_LINE,
+            font_size=11, bold=True, font_color=PARK_LINE)
+
+    # ===== RIGHT: Attempt 2 (pass) =====
+    a2_x = a1_x + card_w + h_gap
+    add_box(slide, a2_x, grid_y, card_w, 0.40,
+            "ATTEMPT 2   ✓   revised",
+            fill=END_FILL, line=END_LINE,
+            font_size=14, bold=True, font_color=END_LINE)
+
+    a2_yaml = """story (revised):
+  shape:   capability
+  title:   "Validate accession against open order"
+  persona: lims
+  tests:   [gram_stain]
+  stage:   accessioning_verification
+  AC: "When specimen received with accession,
+       system MUST match against open order;
+       if no match within 24h, MUST flag for
+       accessioning review"
+  source:  SOP-MICRO-014, lines 23-31"""
+    add_code_box(slide, a2_x, a1_code_y, card_w, 1.55, a2_yaml,
+                 font_size=8.5)
+
+    add_text(slide, a2_x + 0.05, checks_y, card_w - 0.10, 0.25,
+             "Validator checks:",
+             font_size=11, bold=True, color=ACCENT)
+    a2_checks = [
+        ("✓", "1. Closed-enum check  —  passes (unchanged)", END_LINE, False),
+        ("✓", "2. Shape verification  —  passes", END_LINE, False),
+        ("✓", "3. Shape rubric  —  concrete, observable, parameterized (24h)", END_LINE, True),
+    ]
+    cy = checks_y + 0.32
+    for mark, text, color, bold in a2_checks:
+        add_text(slide, a2_x + 0.10, cy, card_w - 0.20, 0.30,
+                 f"{mark}    {text}",
+                 font_size=10, color=color, bold=bold)
+        cy += 0.32
+
+    add_box(slide, a2_x, verdict_y, card_w, 0.40,
+            "→ Story kept (validated)  →  Output A",
+            fill=END_FILL, line=END_LINE,
+            font_size=11, bold=True, font_color=END_LINE)
+
+    # Bottom note (full-width)
+    note_y = verdict_y + 0.55
+    add_text(slide, 0.5, note_y, 12.5, 0.50,
+             "Note:  closed-enum violations (e.g. invalid persona name) hard-reject without entering the revise loop. "
+             "Only shape/AC issues consume revision attempts. Failures after 2 revisions auto-park to the review pile (see slide 11).",
+             font_size=10, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
 
 
 def slide_failures(prs):
@@ -1471,7 +1683,9 @@ def main():
     slide_five(prs)
     slide_six(prs)
     slide_seven(prs)
+    slide_four_shape_examples(prs)
     slide_inside_agents(prs)
+    slide_validator_walkthrough(prs)
     slide_failures(prs)
     slide_eight(prs)
 
