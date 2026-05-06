@@ -399,7 +399,7 @@ def slide_two(prs):
 
     # MANDATORY row (top): two larger boxes
     mand_w, mand_h = 3.6, 1.35
-    mand_y = 1.85
+    mand_y = 2.00
     add_box(slide, 0.5, mand_y, mand_w, mand_h,
             "Theme starter set\nVocabulary of workflow categories\n(Pre-Analytic, Analytic, Reporting, …)",
             fill=BOX_FILL, line=BOX_LINE, font_size=12, bold=True)
@@ -480,7 +480,7 @@ def slide_three(prs):
         ["3", "Story Extractor",
          "Drafts user stories from SOP chunks using schema + shape "
          "definitions + closed-enum catalogs. Optionally retrieves "
-         "(test, role, stage, shape)-matched exemplars from the prior "
+         "(test, persona, stage, shape)-matched exemplars from the prior "
          "discipline's Jira if it's available — improves style fidelity.",
          "Per epic, per SOP"],
         ["4", "Validator (quality check)",
@@ -666,7 +666,7 @@ def slide_five(prs):
     add_node(slide, fx, y1, nw, nh, "Sample SOPs (~20)\n+ prior discipline's themes",
              kind="start", font_size=9, bold=True)
     y2 = y1 + nh + 0.15
-    add_node(slide, fx, y2, nw, nh, "Tag chunks: theme, test, role, stage",
+    add_node(slide, fx, y2, nw, nh, "Tag chunks: theme, test, persona, stage",
              kind="process", font_size=9)
     y3 = y2 + nh + 0.15
     add_node(slide, fx, y3, nw, nh, "Compare each chunk to prior discipline's themes",
@@ -743,37 +743,31 @@ def slide_five(prs):
     code_y = 1.6
     code_w = 5.4
     code_h = 4.0
-    yaml_text = """new_lab_theme_catalog:
-  catalog_id: micro_v1
+    yaml_text = """theme_catalog:
+  catalog_id:     micro_v1
   parent_catalog: cyto_v1     # prior discipline
 
-  inherited_from_cytology:    # carried over by Pass 1
-    - Pre-Analytic
-    - Analytic
-    - Post-Analytic
-    - Reporting
-    - QC
-    - Compliance
-    - Instrumentation
-    - Platform
+  inherited_themes:           # carried over by Pass 1
+    - G1, G2, G3, G4, G5, G6, G7, G8
 
-  newly_added:                # admitted by quorum
+  novel_themes:               # admitted by quorum
     - id: MI1
       name: Susceptibility Testing
       evidence: 42 chunks
-      quorum_decision:
-        votes: [admit×5]
-        decision: admit
+      votes: [admit×5]    decision: admit
     - id: MI2
       name: Biosafety Containment
       evidence: 28 chunks
-      quorum_decision:
-        votes: [admit×4, fold→Compliance]
-        decision: admit
+      votes: [admit×4, fold→G6]    decision: admit
+
+  folded_in:                  # M=3 majority on fold target
+    - id: MI3
+      name: Critical Result Notification
+      evidence: 15 chunks
+      votes: [fold→G4×3, admit×2]    decision: fold→G4
 
   unclassified_bucket:        # left for next round
-    count: 38
-    pct: 6.3%"""
+    count: 38                 # = 6.3% of 600 (above 5% alarm)"""
     add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
                  font_size=8.5, title="Example output: theme catalog (simplified)")
 
@@ -804,7 +798,7 @@ def slide_five(prs):
     res_x = code_x + inh_total_w + div_gap
     add_box(slide, res_x, bucket_y, res_w - 0.04, bucket_h,
             f"{residual[0]}\n{residual[1]} chunks",
-            fill=PARK_FILL, line=PARK_LINE,
+            fill=RGBColor(0xE8, 0xE2, 0xD4), line=RGBColor(0x90, 0x88, 0x78),
             font_size=9, bold=True)
     # tiny caption hint just under the bucket row
     add_text(slide, code_x, bucket_y + bucket_h + 0.02, inh_total_w, 0.18,
@@ -813,7 +807,7 @@ def slide_five(prs):
              align=PP_ALIGN.CENTER)
     add_text(slide, res_x, bucket_y + bucket_h + 0.02, res_w - 0.04, 0.18,
              "feeds Pass 2 cluster",
-             font_size=8, italic=True, color=PARK_LINE,
+             font_size=8, italic=True, color=RGBColor(0x70, 0x68, 0x58),
              align=PP_ALIGN.CENTER)
     # Multi-label clarification footnote
     note_y = bucket_y + bucket_h + 0.24
@@ -875,7 +869,7 @@ def slide_six(prs):
 
     y2 = y1 + 0.75
     add_node(slide, fx, y2, nw, nh,
-             "Tag chunks: theme, test, role, stage",
+             "Tag chunks: theme, test, persona, stage",
              kind="process", font_size=10)
 
     y3 = y2 + 0.75
@@ -939,7 +933,7 @@ def slide_six(prs):
              accession number"
       then: "system MUST match against
              open order"
-  tests: [gram_stain, blood_culture]
+  tests: [gram_stain, blood_culture_incubation]
   persona: lims           # closed enum
   stage: accessioning_verification
   source_citation: SOP-MICRO-014, lines 23-31
@@ -1000,12 +994,12 @@ def slide_seven(prs):
 
     y2 = y1 + nh + 0.15
     add_node(slide, fx, y2, nw, nh,
-             "Cluster on (test, role, stage,\nshape, behavior)",
+             "Cluster on (test, persona, stage,\nshape, behavior)",
              kind="process", font_size=9)
 
     y3 = y2 + nh + 0.15
     add_diamond(slide, fx + 0.3, y3, nw - 0.6, dh,
-                "Pattern in\n≥ 2 docs?", font_size=9)
+                "Pattern in\n≥ 2 SOPs?", font_size=9)
     keep_x = fx + nw + 0.4
     keep_y = y3 + (dh - nh) / 2
     add_node(slide, keep_x, keep_y, 2.5, nh,
@@ -1064,7 +1058,7 @@ def slide_seven(prs):
   parameters:                # what varies
     - test:      enum
     - threshold: number+units
-    - persona_owner: supervisor
+    - persona_owner: microbiologist_supervisor
 
   acceptance_criteria:
     - when: "{test} flagged critical"
@@ -1135,7 +1129,8 @@ def slide_four_shape_examples(prs):
 
     add_text(slide, 0.5, 1.05, 12.5, 0.40,
              "Different shapes have different quality rules (slide 6). "
-             "These examples show what makes each shape that shape.",
+             "These examples show what makes each shape that shape.   "
+             "(AC = Acceptance Criterion.)",
              font_size=12, italic=True, color=TEXT_GREY)
 
     grid_x = 0.4
@@ -1154,7 +1149,7 @@ def slide_four_shape_examples(prs):
 shape:   capability
 persona: lims
 stage:   accessioning_verification
-tests:   [gram_stain, blood_culture]
+tests:   [gram_stain, blood_culture_incubation]
 
 AC1:  When specimen received with
       accession, system MUST match
@@ -1163,16 +1158,17 @@ AC2:  When no match found within 24h,
       system MUST flag for review"""),
         ("WORKFLOW-STAGE-SPLIT",
          "Stage in title  +  sibling stories enumerated",
-         """title:  "PHI update — after results
-        are reported"
+         """title:  "PHI (patient-health-info) update —
+         after results are reported"
 shape:   workflow-stage-split
-persona: supervisor
+persona:  microbiologist_supervisor
 stage:   reporting_case_closure
 
 AC1:  When PHI corrected on finalised
       report, system MUST regenerate
       with audit trail entry
-AC2:  When EHR has report, system MUST
+AC2:  When the EHR (electronic health
+      record) has the report, system MUST
       send corrected-result message
 
 cross_links: STORY-0076 (before work),
@@ -1206,9 +1202,8 @@ AC2:  When existing case has the status,
       MUST migrate to 'Pending Review'
       with audit trail
 
-edge_cases_handled:
-  - existing case with the status
-  - in-flight orders with the status"""),
+edge_cases:  existing case w/ status,
+             in-flight orders w/ status"""),
     ]
 
     for i, (shape_name, feature, body_text) in enumerate(examples):
@@ -1273,21 +1268,25 @@ def slide_inside_agents(prs):
     # arrow to diamond
     add_arrow(slide, cx, y - 0.13, cx, y, weight=1.3)
 
-    # decision diamond
+    # decision diamond — narrowed so it doesn't overlap the right branch
     dh = 0.55
-    add_diamond(slide, fx + 1.7, y, nw - 3.4, dh,
+    diamond_x = fx + 1.95
+    diamond_w = nw - 4.10
+    add_diamond(slide, diamond_x, y, diamond_w, dh,
                 "Pass all checks?", font_size=10)
 
-    # right branch: revise/park
-    rev_x = fx + nw - 1.95
+    # right branch: revise/park — moved further right with clear gap
+    rev_x = diamond_x + diamond_w + 0.30
     rev_y = y + 0.05
-    add_node(slide, rev_x, rev_y, 1.85, nh - 0.05,
-             "no:  revise (≤2)\nthen auto-park",
+    rev_w = (fx + nw) - rev_x
+    add_node(slide, rev_x, rev_y, rev_w, nh - 0.05,
+             "revise (≤2)\nthen auto-park",
              kind="park", font_size=8, bold=True)
-    # arrow from diamond to revise box
-    add_arrow(slide, fx + nw - 1.7, y + dh / 2, rev_x, rev_y + (nh-0.05) / 2,
+    # arrow from diamond right vertex → left edge of revise box
+    add_arrow(slide, diamond_x + diamond_w, y + dh / 2,
+              rev_x, rev_y + (nh - 0.05) / 2,
               label="no", label_color=PARK_LINE, label_bold=True,
-              label_offset=(0.05, -0.18))
+              label_offset=(0.0, -0.22))
 
     # arrow down from diamond
     y2 = y + dh + 0.30
@@ -1309,7 +1308,7 @@ def slide_inside_agents(prs):
              font_size=10, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
     add_text(slide, right_x, 2.42, right_w, 0.3,
-             "Each story has dependencies[] and cross_links[] — the resolver builds a DAG and sorts it.",
+             "Each story has dependencies[] and cross_links[] — the resolver builds a dependency graph (DAG) and sorts it.",
              font_size=9, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
 
@@ -1389,10 +1388,10 @@ def slide_validator_walkthrough(prs):
        validate appropriately"
   source:  SOP-MICRO-014, lines 23-31"""
     a1_code_y = grid_y + 0.45
-    add_code_box(slide, a1_x, a1_code_y, card_w, 1.55, a1_yaml,
+    add_code_box(slide, a1_x, a1_code_y, card_w, 1.75, a1_yaml,
                  font_size=8.5)
 
-    checks_y = a1_code_y + 1.65
+    checks_y = a1_code_y + 1.85
     add_text(slide, a1_x + 0.05, checks_y, card_w - 0.10, 0.25,
              "Validator checks:",
              font_size=11, bold=True, color=ACCENT)
@@ -1433,7 +1432,7 @@ def slide_validator_walkthrough(prs):
        if no match within 24h, MUST flag for
        accessioning review"
   source:  SOP-MICRO-014, lines 23-31"""
-    add_code_box(slide, a2_x, a1_code_y, card_w, 1.55, a2_yaml,
+    add_code_box(slide, a2_x, a1_code_y, card_w, 1.75, a2_yaml,
                  font_size=8.5)
 
     add_text(slide, a2_x + 0.05, checks_y, card_w - 0.10, 0.25,
@@ -1633,7 +1632,7 @@ def slide_eight(prs):
 
     deliveries = [
         ("Jira backlog",
-         "Epics + Stories\nReady for the dev team\nIncludes traceability to source docs"),
+         "Epics + Stories\nReady for the dev team\nIncludes traceability to source SOPs"),
         ("Configuration files",
          "Per-test settings\n(e.g. blood culture parameters)\nDeterministic structure"),
         ("Reference + audit",
@@ -1677,9 +1676,9 @@ def slide_eight(prs):
              font_size=9, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
     add_bullets(slide, a_x + 0.10, col_y + 0.72, col_w - 0.20, col_h - 0.72, [
-        "Persona catalog  —  from the Roles & Process Map document",
-        "Universal 6-stage enum  —  from the Process Map",
-        "ANALOGY map persona_links  —  from the cross-discipline role inventory",
+        "Persona inventory  —  documented in your Roles & Process Map (we'll structure it into micro_persona_v1.yaml)",
+        "Universal 6-stage enum  —  derived from the Process Map (one-time, universal)",
+        "ANALOGY persona_links  —  from the cross-discipline role inventory",
     ], font_size=9, color=TEXT_DARK)
 
     # Column B — From the seminal prior (Cytology)
@@ -1708,8 +1707,8 @@ def slide_eight(prs):
              font_size=9, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
     add_bullets(slide, c_x + 0.10, col_y + 0.72, col_w - 0.20, col_h - 0.72, [
-        "Test catalog  (micro_test_v1.yaml)  —  list of in-scope Microbiology tests (Gram stain, blood culture, MALDI, AST, …)",
-        "Sample SOPs  (~20 representative procedure documents) to seed Phase 1",
+        "Test catalog  (micro_test_v1.yaml)  —  list of in-scope Microbiology tests (Gram stain, blood culture, MALDI mass-spec ID, AST antimicrobial susceptibility testing, …)",
+        "Sample SOPs  (~20 representative SOPs) to seed Phase 1",
     ], font_size=9, color=TEXT_DARK)
 
     # Optional row
