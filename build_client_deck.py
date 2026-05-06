@@ -813,6 +813,14 @@ def slide_five(prs):
              "feeds Pass 2 cluster",
              font_size=8, italic=True, color=PARK_LINE,
              align=PP_ALIGN.CENTER)
+    # Multi-label clarification footnote
+    note_y = bucket_y + bucket_h + 0.24
+    add_text(slide, code_x, note_y, code_w, 0.40,
+             "Note:  Pass 1 here is single-label — each chunk goes to "
+             "its best-matching theme above τ_match=0.65 (or to residual). "
+             "Runtime story / chunk theme tags are multi-label per D3 "
+             "(themes are soft tags, not a forced taxonomy).",
+             font_size=8, italic=True, color=TEXT_GREY)
 
 
 # ---- slide 6: phase 2 — flowchart + story example ------------------------
