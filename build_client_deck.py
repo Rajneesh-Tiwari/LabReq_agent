@@ -445,9 +445,11 @@ def slide_two(prs):
              "Tests   •   Roles   •   The new discipline's own SOPs   •   "
              "Tasks (out of scope; dev team owns decomposition)",
              font_size=11, color=TEXT_GREY)
-    add_text(slide, 0.5, 6.45, 12.5, 0.6,
-             "Quality-check thresholds use defaults tuned by first-run telemetry — "
-             "no holdout calibration against the prior discipline is needed.",
+    add_text(slide, 0.5, 6.40, 12.5, 0.30,
+             "Sourcing:  theme + epic catalogs are snapshotted from Cytology's existing Connect build (the seminal prior).",
+             font_size=10, italic=True, color=ACCENT)
+    add_text(slide, 0.5, 6.72, 12.5, 0.30,
+             "Quality-check thresholds use defaults tuned by first-run telemetry — no holdout calibration against the prior discipline is needed.",
              font_size=10, italic=True, color=TEXT_GREY)
 
 
@@ -1652,26 +1654,76 @@ def slide_eight(prs):
         _set_text(bb, body, font_size=11, bold=False, color=TEXT_DARK,
                   align=PP_ALIGN.CENTER)
 
-    add_text(slide, 0.5, 3.15, 12.5, 0.4,
-             "What we need from the client — mandatory",
-             font_size=15, bold=True, color=ACCENT)
-    add_bullets(slide, 0.7, 3.55, 12.0, 1.6, [
-        "The list of tests for each discipline in scope (blood culture, urine culture, target pathogens for Microbiology).",
-        "The list of roles in those disciplines (with type: human / system / external).",
-        "The prior discipline's theme catalog and epic catalog (small structured YAMLs — Cytology for the seminal extension).",
-        "A sample of ~20 SOPs per new discipline to seed Phase 1.",
-    ], font_size=11)
+    # Inputs section — categorized by sourcing
+    add_text(slide, 0.5, 2.95, 12.5, 0.35,
+             "Inputs to the system  —  what's already captured vs what's still needed",
+             font_size=14, bold=True, color=ACCENT)
 
-    add_text(slide, 0.5, 5.15, 12.5, 0.35,
-             "Optional — quality enhancement",
-             font_size=12, bold=True, italic=True, color=TEXT_GREY)
-    add_bullets(slide, 0.7, 5.5, 12.0, 0.5, [
-        "Sanitized prior-discipline Jira export — improves story style fidelity if available; not required for the system to function.",
-    ], font_size=11, color=TEXT_GREY)
+    # 3 columns
+    col_y = 3.35
+    col_h = 2.10
+    col_gap = 0.18
+    col_w = (13.333 - 2 * 0.4 - 2 * col_gap) / 3
+    col_x0 = 0.4
 
-    add_box(slide, 0.5, 6.15, 12.55, 0.85,
-            "Alignment ask: do these inputs match what's available on your side, "
-            "and does the output match what your dev team would consume?",
+    # Column A — Already captured from project documentation
+    a_x = col_x0
+    add_box(slide, a_x, col_y, col_w, 0.40,
+            "Already captured  ✓",
+            fill=END_FILL, line=END_LINE,
+            font_size=12, bold=True, font_color=END_LINE)
+    add_text(slide, a_x + 0.03, col_y + 0.42, col_w - 0.06, 0.22,
+             "from your project documentation",
+             font_size=9, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    add_bullets(slide, a_x + 0.10, col_y + 0.72, col_w - 0.20, col_h - 0.72, [
+        "Persona catalog  —  from the Roles & Process Map document",
+        "Universal 6-stage enum  —  from the Process Map",
+        "ANALOGY map persona_links  —  from the cross-discipline role inventory",
+    ], font_size=9, color=TEXT_DARK)
+
+    # Column B — From the seminal prior (Cytology)
+    b_x = col_x0 + col_w + col_gap
+    add_box(slide, b_x, col_y, col_w, 0.40,
+            "From the seminal prior  ✓",
+            fill=BOX_FILL, line=BOX_LINE,
+            font_size=12, bold=True, font_color=ACCENT)
+    add_text(slide, b_x + 0.03, col_y + 0.42, col_w - 0.06, 0.22,
+             "snapshotted from Cytology's Connect build",
+             font_size=9, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    add_bullets(slide, b_x + 0.10, col_y + 0.72, col_w - 0.20, col_h - 0.72, [
+        "Theme catalog  (cyto_v1)  —  used as the warm-start prior for Theme Discovery",
+        "Epic catalog  (cyto_epic_v1)  —  used by the conditioned Epic Extractor",
+    ], font_size=9, color=TEXT_DARK)
+
+    # Column C — Still needed from the client
+    c_x = col_x0 + 2 * (col_w + col_gap)
+    add_box(slide, c_x, col_y, col_w, 0.40,
+            "Still needed from the client",
+            fill=SYS_FILL, line=SYS_LINE,
+            font_size=12, bold=True, font_color=ACCENT)
+    add_text(slide, c_x + 0.03, col_y + 0.42, col_w - 0.06, 0.22,
+             "the only blocking inputs",
+             font_size=9, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+    add_bullets(slide, c_x + 0.10, col_y + 0.72, col_w - 0.20, col_h - 0.72, [
+        "Test catalog  (micro_test_v1.yaml)  —  list of in-scope Microbiology tests (Gram stain, blood culture, MALDI, AST, …)",
+        "Sample SOPs  (~20 representative procedure documents) to seed Phase 1",
+    ], font_size=9, color=TEXT_DARK)
+
+    # Optional row
+    opt_y = col_y + col_h + 0.10
+    add_text(slide, 0.5, opt_y, 12.5, 0.25,
+             "Optional  —  quality enhancement",
+             font_size=11, bold=True, italic=True, color=TEXT_GREY)
+    add_text(slide, 0.7, opt_y + 0.27, 12.0, 0.25,
+             "•   Sanitized Cytology Jira export  —  improves story style fidelity at extraction time. The system runs without it.",
+             font_size=10, italic=True, color=TEXT_GREY)
+
+    # Alignment ask
+    add_box(slide, 0.5, opt_y + 0.65, 12.55, 0.55,
+            "Alignment ask:  the test catalog + sample SOPs are the gating inputs.  Everything else is in hand.  Confirm?",
             fill=SYS_FILL, line=SYS_LINE,
             font_size=13, bold=True, font_color=ACCENT,
             align=PP_ALIGN.CENTER)
