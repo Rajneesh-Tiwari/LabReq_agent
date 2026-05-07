@@ -6,20 +6,21 @@ Usage:
 
 Produces: client_alignment_deck.pptx alongside this script.
 
-12 slides:
+13 slides:
   1.  What we are building
   2.  What "prior discipline to learn from" means
   3.  The agents (cast of characters)
   4.  The full flow at a glance (3 phases)
   5.  Phase 1 — Setup: flowchart + theme catalog schema example
-  6.  Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
-  7.  Phase 3 — Combine: flowchart + capability story example
-  8.  The 4 story shapes — one example each (capability / stage-split /
+  6.  Epic Extractor — agent deep-dive (per-SOP + batch novelty)
+  7.  Phase 2 — Per-SOP: flowchart (in ForEach container) + story schema
+  8.  Phase 3 — Combine: flowchart + capability story example
+  9.  The 4 story shapes — one example each (capability / stage-split /
       configuration-instance / cleanup)
-  9.  Inside two key agents — Validator + Dependency Resolver
-  10. Validator at work — sample story walks through the checks
-  11. What happens when something fails (3-level fallback + 3 queues)
-  12. What ships and the alignment ask
+  10. Inside two key agents — Validator + Dependency Resolver
+  11. Validator at work — sample story walks through the checks
+  12. What happens when something fails (3-level fallback + 3 queues)
+  13. What ships and the alignment ask
 """
 
 from pathlib import Path
@@ -790,7 +791,204 @@ def slide_five(prs):
              font_size=8, italic=True, color=TEXT_GREY)
 
 
-# ---- slide 6: phase 2 — flowchart + story example ------------------------
+# ---- slide 6: epic extractor — agent deep-dive ---------------------------
+
+def slide_epic_extractor(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_title(slide, "Epic Extractor — building the epic catalog")
+
+    add_text(slide, 0.5, 1.05, 12.5, 0.4,
+             "Same conditioned-discovery mechanism as Theme Discovery (slide 5), "
+             "applied at the epic level. Runs during Phase 2 per-SOP and at the "
+             "Phase 3 batch boundary — not a separate phase.",
+             font_size=12, color=TEXT_DARK)
+
+    # ----- left half: flowchart -----
+    fx = 0.5
+    nw = 3.0
+    nh = 0.42
+    cx = fx + nw / 2
+    dh = 0.55
+    gap = 0.10
+    post_diamond = 0.22
+
+    # per-SOP (top) section label
+    add_text(slide, fx, 1.50, nw, 0.20,
+             "Runs PER SOP (in parallel)",
+             font_size=8, italic=True, bold=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+
+    y1 = 1.72
+    add_node(slide, fx, y1, nw, nh,
+             "Epic Extractor:\ndraft epics from this SOP",
+             kind="agent", font_size=9, bold=True)
+    y2 = y1 + nh + gap
+    add_node(slide, fx, y2, nw, nh,
+             "Match each draft against\nprior epic catalog (cyto_epic_v1)",
+             kind="process", font_size=9)
+    y3 = y2 + nh + gap
+    add_diamond(slide, fx + 0.4, y3, nw - 0.8, dh,
+                "Score ≥ τ_match?", font_size=9)
+    # YES branch — inherit (with epic_analog populated by construction)
+    inh_x = fx + nw + 0.4
+    inh_y = y3 + (dh - nh) / 2
+    add_node(slide, inh_x, inh_y, 2.5, nh,
+             "Inherit\n(epic_analog populated\nby construction)",
+             kind="side", font_size=8.5, bold=True)
+
+    # NO branch — residual draft, continues down
+    y4 = y3 + dh + post_diamond
+    add_node(slide, fx, y4, nw, nh,
+             "Residual draft\n(per-SOP output → batch pool)",
+             kind="process", font_size=9)
+
+    # batch boundary — separator label
+    sep_y = y4 + nh + 0.06
+    sep = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT,
+                                     Inches(fx), Inches(sep_y),
+                                     Inches(fx + nw), Inches(sep_y))
+    sep.line.color.rgb = RGBColor(0xC0, 0xC8, 0xD0)
+    sep.line.width = Pt(0.75)
+    add_text(slide, fx, sep_y + 0.01, nw, 0.18,
+             "After all SOPs processed (BATCH BOUNDARY)",
+             font_size=8, italic=True, bold=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+
+    y5 = sep_y + 0.22
+    add_node(slide, fx, y5, nw, nh,
+             "Cluster residual drafts\nacross all SOPs",
+             kind="process", font_size=9)
+
+    # 5 parallel conditional checks
+    y6 = y5 + nh + gap
+    qph = 0.40
+    qpw_each = (nw - 4 * 0.04) / 5
+    for i in range(5):
+        qx = fx + i * (qpw_each + 0.04)
+        add_box(slide, qx, y6, qpw_each, qph, str(i + 1),
+                fill=SYS_FILL, line=SYS_LINE,
+                font_size=11, bold=True)
+    add_text(slide, fx, y6 + qph + 0.01, nw, 0.18,
+             "Same 5 conditional checks as slide 5",
+             font_size=8, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
+
+    y7 = y6 + qph + 0.25
+    add_diamond(slide, fx + 0.4, y7, nw - 0.8, dh,
+                "3 of 5 conditions\ncleared?", font_size=9)
+    # NO branch — park to E0
+    park_x = fx + nw + 0.4
+    park_y = y7 + (dh - nh) / 2
+    add_node(slide, park_x, park_y, 2.5, nh,
+             "Park to E0\n(unclassified bucket)",
+             kind="park", font_size=9, bold=True)
+
+    # final node
+    y8 = y7 + dh + post_diamond
+    add_node(slide, fx, y8, nw, nh,
+             "Epic catalog\n(inherited + novel)",
+             kind="end", font_size=10, bold=True)
+
+    # arrows
+    add_arrow(slide, cx, y1 + nh, cx, y2)
+    add_arrow(slide, cx, y2 + nh, cx, y3)
+    # decision 1 branches
+    add_arrow(slide, fx + nw - 0.4, y3 + dh / 2, inh_x, inh_y + nh / 2,
+              label="yes\n(inherit)", label_offset=(0.05, -0.32),
+              label_color=END_LINE, label_bold=True)
+    add_arrow(slide, cx, y3 + dh, cx, y4,
+              label="no\n(residual)", label_offset=(0.08, -0.18),
+              label_color=PARK_LINE, label_bold=True)
+    # residual → cluster (crosses the dashed separator visually)
+    add_arrow(slide, cx, y4 + nh, cx, y5)
+    # cluster → 5-check row
+    add_arrow(slide, cx, y5 + nh, cx, y6)
+    # 5-check row → quorum decision
+    add_arrow(slide, cx, y6 + qph + 0.22, cx, y7)
+    # decision 2 branches
+    add_arrow(slide, fx + nw - 0.4, y7 + dh / 2, park_x, park_y + nh / 2,
+              label="no", label_offset=(0.05, -0.18),
+              label_color=PARK_LINE, label_bold=True)
+    add_arrow(slide, cx, y7 + dh, cx, y8,
+              label="yes (admit)", label_offset=(0.05, -0.18),
+              label_color=END_LINE, label_bold=True)
+    # inherit branch elbows down + left into the final node's right edge
+    add_arrow(slide, inh_x + 1.25, inh_y + nh,
+              fx + nw, y8 + nh / 2,
+              color=SIDE_BRANCH_LINE, weight=1.25,
+              connector_type=MSO_CONNECTOR.ELBOW)
+
+    # ----- right half: epic catalog YAML example -----
+    code_x = 7.7
+    code_y = 1.6
+    code_w = 5.4
+    code_h = 4.5
+    yaml_text = """epic_catalog:
+  catalog_id:     micro_epic_v1
+  parent_catalog: cyto_epic_v1     # prior discipline
+
+  inherited_epics:                 # score ≥ τ_match
+    - id:    EPIC-MICRO-001
+      title: Specimen Receiving
+      epic_analog:
+        catalog_id: cyto_epic_v1
+        epic_id:    EPIC-CYTO-014
+        equivalence: identical     # populated by construction
+      auto_inherited: true
+    - id:    EPIC-MICRO-002
+      title: Reporting
+      epic_analog: { epic_id: EPIC-CYTO-021, ... }
+
+  novel_epics:                     # admitted via quorum
+    - id:    EPIC-MICRO-007
+      title: Antibiotic Susceptibility Testing (AST)
+      cluster_evidence:
+        n_drafts:  4
+        from_sops: [SOP-007, SOP-019, SOP-022, SOP-031]
+      votes: [admit×5]   decision: admit
+      epic_analog: null              # no Cyto correspondent
+
+  unclassified_drafts:             # E0 bucket
+    count: 3"""
+    add_code_box(slide, code_x, code_y, code_w, code_h, yaml_text,
+                 font_size=8.5, title="Example output: epic catalog (simplified)")
+
+    # ----- inheritance-lift mini-stat under YAML -----
+    stat_y = code_y + code_h + 0.15
+    add_text(slide, code_x, stat_y, code_w, 0.22,
+             "What this looks like in practice",
+             font_size=10, bold=True, color=ACCENT)
+    stat_row_y = stat_y + 0.27
+    stat_h = 0.42
+    # 3-tile mini summary
+    tiles = [
+        ("inherited", "~70%", "auto, no quorum",
+         BOX_FILL, BOX_LINE, ACCENT),
+        ("novel via quorum", "~25%", "epic_analog = null",
+         END_FILL, END_LINE, RGBColor(0x3E, 0x6A, 0x35)),
+        ("E0 (parked)", "~5%", "discard quorum (D32)",
+         PARK_FILL, PARK_LINE, PARK_LINE),
+    ]
+    tile_gap = 0.08
+    tile_w = (code_w - 2 * tile_gap) / 3
+    for i, (label, pct, sub, fill, line, color) in enumerate(tiles):
+        x = code_x + i * (tile_w + tile_gap)
+        # header
+        add_box(slide, x, stat_row_y, tile_w, stat_h * 0.55, label,
+                fill=fill, line=line, font_size=9, bold=True,
+                font_color=color)
+        # body — pct (large) + sub (small)
+        add_text(slide, x, stat_row_y + stat_h * 0.55 + 0.02,
+                 tile_w, 0.20, pct,
+                 font_size=14, bold=True, color=color,
+                 align=PP_ALIGN.CENTER)
+        add_text(slide, x, stat_row_y + stat_h * 0.55 + 0.24,
+                 tile_w, 0.18, sub,
+                 font_size=8, italic=True, color=TEXT_GREY,
+                 align=PP_ALIGN.CENTER)
+
+
+# ---- slide 7: phase 2 — flowchart + story example ------------------------
 
 def slide_six(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -953,7 +1151,7 @@ def slide_six(prs):
                 font_size=8)
 
 
-# ---- slide 7: phase 3 — flowchart + capability story example ------------
+# ---- slide 8: phase 3 — flowchart + capability story example ------------
 
 def slide_seven(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -1112,7 +1310,7 @@ def slide_shape_examples(prs):
     add_title(slide, "The 4 story shapes — one example each")
 
     add_text(slide, 0.5, 1.05, 12.5, 0.40,
-             "Different shapes have different quality rules (slide 6). "
+             "Different shapes have different quality rules (slide 7). "
              "These examples show what makes each shape that shape.   "
              "(AC = Acceptance Criterion.)",
              font_size=12, italic=True, color=TEXT_GREY)
@@ -1240,7 +1438,7 @@ def slide_inside_agents(prs):
         ("start",   "Receives a draft story",                                 True),
         ("process", "1. Closed-enum check  (tests, persona, stage in catalog?)", False),
         ("process", "2. Shape verification  (declared shape matches content?)", False),
-        ("process", "3. Apply shape-specific rubric  (4 rules — see slide 6)", False),
+        ("process", "3. Apply shape-specific rubric  (4 rules — see slide 7)", False),
     ]
     for kind, text, bold in steps:
         add_node(slide, fx, y, nw, nh, text, kind=kind, font_size=10, bold=bold)
@@ -1442,7 +1640,7 @@ def slide_validator_walkthrough(prs):
     note_y = verdict_y + 0.55
     add_text(slide, 0.5, note_y, 12.5, 0.50,
              "Note:  closed-enum violations (e.g. invalid persona name) hard-reject without entering the revise loop. "
-             "Only shape/AC issues consume revision attempts. Failures after 2 revisions auto-park to the review pile (see slide 11).",
+             "Only shape/AC issues consume revision attempts. Failures after 2 revisions auto-park to the review pile (see slide 12).",
              font_size=10, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
 
@@ -1723,6 +1921,7 @@ def main():
     slide_three(prs)
     slide_four(prs)
     slide_five(prs)
+    slide_epic_extractor(prs)
     slide_six(prs)
     slide_seven(prs)
     slide_shape_examples(prs)
