@@ -349,7 +349,7 @@ def slide_one(prs):
         (4.7, "Cold-start discovery",
          [
              "System discovers business capabilities, themes, epics, personas, tests from this discipline's SOPs alone — no curated catalogs up front.",
-             "Top-down hierarchy: capability ← theme ← epic. Discovered together, reviewable at each level.",
+             "Top-down cascade: capabilities first, then themes within each capability, then epics within each theme. Reviewable at every level.",
          ]),
         (8.8, "Non-blocking review",
          [
@@ -409,8 +409,8 @@ def slide_two(prs):
              font_size=11.5, bold=True, color=PARK_LINE)
     add_bullets(slide, lx, 5.55, lw, 1.30, [
         "No prior-discipline catalogs (no warm-start).",
-        "No universal lab_stage artifact — workflow axis is the discovered "
-        "business_capability catalog, per discipline.",
+        "No universal lab_stage_v1 artifact — workflow axis is the discovered "
+        "business_capability_v1 catalog, per discipline.",
         "No SME pre-curation of personas / tests — discovered from SOP mentions.",
     ], font_size=10.5, color=TEXT_GREY)
 
@@ -452,7 +452,7 @@ def slide_three(prs):
     add_title(slide, "End-to-end flow")
     add_subtitle(
         slide,
-        "Three phases. Phase 1 once, Phase 2 in parallel across SOPs, Phase 3 deferred to the roadmap.",
+        "Three phases. Phase 1 once (taxonomy cascade + entity extraction), Phase 2 in parallel across SOPs, Phase 3 deferred to the roadmap.",
     )
 
     # Three large phase blocks across the slide
@@ -582,7 +582,7 @@ def slide_three(prs):
     add_box(slide, 0.5, bb_y, cc_w, bb_h, "",
             fill=SIDE_FILL, line=SIDE_LINE)
     add_text(slide, 0.65, bb_y + 0.05, cc_w - 0.30, 0.26,
-             "Sampled Validator QC", font_size=11.5, bold=True,
+             "Sampled Validator QC (Quality Control)", font_size=11.5, bold=True,
              color=SIDE_LINE)
     add_text(slide, 0.65, bb_y + 0.30, cc_w - 0.30, 0.30,
              "~10% async sampling of emitted Phase 2 stories.  Drift → priority review.",
@@ -592,7 +592,7 @@ def slide_three(prs):
     add_box(slide, hitl_x, bb_y, cc_w, bb_h, "",
             fill=PARK_FILL, line=PARK_LINE)
     add_text(slide, hitl_x + 0.15, bb_y + 0.05, cc_w - 0.30, 0.26,
-             "Review queue (HITL)", font_size=11.5, bold=True,
+             "Review queue (HITL — Human-in-the-Loop)", font_size=11.5, bold=True,
              color=PARK_LINE)
     add_text(slide, hitl_x + 0.15, bb_y + 0.30, cc_w - 0.30, 0.30,
              "Every emission logged.  Failures + low-conf prioritized for human review (post-hoc, non-blocking).",
@@ -654,11 +654,12 @@ def slide_four(prs):
         cx1, cy1,
         "Catalog Builder",
         "Cold-discovers the 5 catalogs from the SOP corpus",
-        "Phase 1 (5 runs: capability, theme, epic, persona, test)",
-        "Operates on already-clustered chunks (chunking and clustering are "
-        "deterministic preprocessing). Names each cluster and admits via a "
-        "structured rubric. Top-down hierarchy: capability ← theme ← epic.",
-        "One agent class with 5 runs, instead of 5 separate agent classes.",
+        "Phase 1 (5 runs, two modes)",
+        "Taxonomy mode (capability → theme → epic, top-down cascade): names "
+        "each cluster and admits via rubric; child levels cluster only within "
+        "their parent's chunks.\nEntity mode (persona, test): extracts named "
+        "mentions per chunk, dedupes across the corpus, admits each unique entity.",
+        "One agent class with two modes, instead of five separate agent classes.",
     )
     agent_card(
         cx2, cy1,
@@ -666,9 +667,10 @@ def slide_four(prs):
         "Tags each chunk with persona / test / capability",
         "Phase 2 (per chunk, parallel across SOPs)",
         "Single structured-output call: looks up persona refs, test ref, and "
-        "capability ref for each chunk against persona_v1, test_v1, and "
-        "business_capability_v1. Three lookups in one call.",
-        "Three resolutions on the same chunk are bundled into one structured-output call instead of three round-trips.",
+        "capability ref against persona_v1, test_v1, and business_capability_v1. "
+        "theme_ref and epic_ref are inherited directly from the chunk's Phase 1 "
+        "cascade buckets — no LLM lookup needed.",
+        "Three LLM lookups bundled into one call; theme/epic come for free from cascade.",
     )
     agent_card(
         cx1, cy2,
@@ -701,85 +703,126 @@ def slide_five(prs):
     add_title(slide, "Phase 1 — Catalog Build (cold)")
     add_subtitle(
         slide,
-        "One pass over the corpus produces all 5 catalogs.  Same agent, five runs — different granularity / discovery mode each run.",
+        "The 3 taxonomy runs cascade top-down (capability → theme within capability → "
+        "epic within theme).  The 2 entity runs (persona, test) are parallel.  All five "
+        "share the same chunking; each step admits its own.",
     )
 
-    # Left side: vertical flow of the cold-discovery mechanism
+    # Left side: shared input → split (taxonomy cascade vs entity extraction) → catalog
     fx = 0.5
-    nw = 3.6
+    full_w = 3.6
+    col_w = 1.70
+    col_gap = 0.20
+    col_a_x = fx
+    col_b_x = fx + col_w + col_gap
     nh = 0.42
 
-    add_section_header(slide, fx, 1.45, nw, "Phase 1 pipeline (preprocessing + agent)")
+    add_section_header(slide, fx, 1.45, full_w, "Phase 1 pipeline")
 
-    y = 1.78
-    add_node(slide, fx, y, nw, nh, "SOPs (full corpus)", kind="start", font_size=11)
-    y2 = y + nh + 0.18
-    add_node(slide, fx, y2, nw, nh, "1. Chunk SOPs (deterministic)",
-             kind="process", font_size=10.5)
-    y3 = y2 + nh + 0.18
-    add_node(slide, fx, y3, nw, nh, "2. Embed + cluster chunks",
-             kind="process", font_size=10.5)
-    y4 = y3 + nh + 0.18
-    add_node(slide, fx, y4, nw, nh, "3. Name each cluster (LLM)",
-             kind="agent", font_size=10.5)
-    y5 = y4 + nh + 0.18
-    admit_h = 0.62
-    add_node(slide, fx, y5, nw, admit_h,
-             "4. Admit via structured rubric\n(coherence + size + naming clarity)",
-             kind="agent", font_size=10)
+    # Shared top: SOPs → Chunk
+    y_sops = 1.78
+    add_node(slide, fx, y_sops, full_w, nh,
+             "SOPs (full corpus)", kind="start", font_size=11)
+    y_chunk = y_sops + nh + 0.18
+    add_node(slide, fx, y_chunk, full_w, nh,
+             "1. Chunk SOPs (deterministic)", kind="process", font_size=10.5)
 
-    # Linear flow continues straight to catalog (no gate, non-blocking)
-    y6 = y5 + admit_h + 0.20
-    add_node(slide, fx, y6, nw, nh, "Catalog YAML",
+    # ---- Cascade stages (col A) ----
+    # Column meta-labels intentionally omitted; subtitle conveys taxonomy/entity split.
+    # Stages start with a small gap below the chunk box to let arrows breathe.
+    stage_h = 0.85
+    y_stage1 = y_chunk + nh + 0.50
+
+    def cascade_box(y, head, body):
+        add_box(slide, col_a_x, y, col_w, stage_h, "",
+                fill=SYS_FILL, line=SYS_LINE)
+        add_text(slide, col_a_x + 0.08, y + 0.05, col_w - 0.16, 0.24,
+                 head, font_size=9.5, bold=True, color=TEXT_DARK,
+                 align=PP_ALIGN.LEFT)
+        add_text(slide, col_a_x + 0.08, y + 0.30, col_w - 0.16, stage_h - 0.34,
+                 body, font_size=8, color=TEXT_DARK,
+                 align=PP_ALIGN.LEFT)
+
+    cascade_box(y_stage1,
+                "Capability run",
+                "Cluster all chunks → name +\nadmit.  ~6–12 capabilities.")
+    y_stage2 = y_stage1 + stage_h + 0.16
+    cascade_box(y_stage2,
+                "Theme run (per capability)",
+                "Re-cluster within each\ncapability.  ~12–20 themes.")
+    y_stage3 = y_stage2 + stage_h + 0.16
+    cascade_box(y_stage3,
+                "Epic run (per theme)",
+                "Re-cluster within each\ntheme.  ~80–150 epics.")
+
+    # ---- Extraction stages (col B) ----
+    def extract_box(y, head, body, kind="process"):
+        fill = SYS_FILL if kind == "agent" else BOX_FILL
+        line = SYS_LINE if kind == "agent" else BOX_LINE
+        add_box(slide, col_b_x, y, col_w, stage_h, "",
+                fill=fill, line=line)
+        add_text(slide, col_b_x + 0.08, y + 0.05, col_w - 0.16, 0.24,
+                 head, font_size=9.5, bold=True, color=TEXT_DARK,
+                 align=PP_ALIGN.LEFT)
+        add_text(slide, col_b_x + 0.08, y + 0.30, col_w - 0.16, stage_h - 0.34,
+                 body, font_size=8, color=TEXT_DARK,
+                 align=PP_ALIGN.LEFT)
+
+    extract_box(y_stage1,
+                "Extract mentions (LLM)",
+                "Per chunk, pull named\npersonas / tests.",
+                kind="agent")
+    extract_box(y_stage2,
+                "Dedupe + admit",
+                "Merge near-duplicates;\nadmit each unique entity.",
+                kind="process")
+
+    # ---- Output: Catalog YAML (full width) ----
+    y_cat = y_stage3 + stage_h + 0.20
+    add_node(slide, fx, y_cat, full_w, nh, "Catalog YAML  (5 catalogs)",
              kind="end", font_size=11, bold=True)
 
-    # Arrows down the chain (explicit endpoints)
-    cx = fx + nw / 2
-    add_arrow(slide, cx, y + nh,        cx, y2)
-    add_arrow(slide, cx, y2 + nh,       cx, y3)
-    add_arrow(slide, cx, y3 + nh,       cx, y4)
-    add_arrow(slide, cx, y4 + nh,       cx, y5)
-    add_arrow(slide, cx, y5 + admit_h,  cx, y6)
+    # ---- Arrows ----
+    cx_full = fx + full_w / 2
+    cx_a = col_a_x + col_w / 2
+    cx_b = col_b_x + col_w / 2
 
-    # Side branch from Admit → review queue (low-confidence admits flagged)
-    rev_x = fx + nw + 0.30
-    rev_y = y5 + 0.18
+    # Shared top
+    add_arrow(slide, cx_full, y_sops + nh, cx_full, y_chunk)
+    # Chunk → top of each column
+    add_arrow(slide, cx_full, y_chunk + nh, cx_a, y_stage1)
+    add_arrow(slide, cx_full, y_chunk + nh, cx_b, y_stage1)
+    # Cascade arrows (col A)
+    add_arrow(slide, cx_a, y_stage1 + stage_h, cx_a, y_stage2)
+    add_arrow(slide, cx_a, y_stage2 + stage_h, cx_a, y_stage3)
+    # Extraction arrows (col B)
+    add_arrow(slide, cx_b, y_stage1 + stage_h, cx_b, y_stage2)
+    # Both columns merge into Catalog YAML
+    add_arrow(slide, cx_a, y_stage3 + stage_h, cx_full, y_cat)
+    add_arrow(slide, cx_b, y_stage2 + stage_h, cx_full, y_cat)
+
+    # ---- Review queue: beside Catalog YAML (single arrow, no column-crossing) ----
+    rev_x = fx + full_w + 0.30
     rev_w = 2.45
-    rev_h = 0.95
+    rev_y = y_cat
+    rev_h = nh
     add_box(slide, rev_x, rev_y, rev_w, rev_h, "",
             fill=PARK_FILL, line=PARK_LINE)
-    add_text(slide, rev_x + 0.10, rev_y + 0.08, rev_w - 0.20, 0.26,
-             "↘ Review queue", font_size=11, bold=True, color=PARK_LINE)
-    add_text(slide, rev_x + 0.10, rev_y + 0.36, rev_w - 0.20, 0.55,
-             "Low-confidence admits flagged for priority review.\n"
-             "All admits already in catalog — review is post-hoc.",
-             font_size=9.5, italic=True, color=TEXT_DARK)
-    # branch arrow from Admit right edge to Review queue left edge
-    add_arrow(slide, fx + nw + 0.01, y5 + admit_h / 2,
+    add_text(slide, rev_x + 0.10, rev_y + 0.04, rev_w - 0.20, 0.20,
+             "↘ Review queue", font_size=10, bold=True, color=PARK_LINE)
+    add_text(slide, rev_x + 0.10, rev_y + 0.22, rev_w - 0.20, rev_h - 0.24,
+             "Low-conf admits (any level) flagged — pipeline never waits.",
+             font_size=8.5, italic=True, color=TEXT_DARK)
+    # Single arrow from Catalog YAML right edge to Review queue left edge
+    add_arrow(slide, fx + full_w + 0.01, y_cat + nh / 2,
               rev_x - 0.01, rev_y + rev_h / 2,
               color=PARK_LINE, weight=1.5)
-
-    # Side note: granularity knob
-    add_box(slide, fx + nw + 0.3, y3 - 0.05, 2.45, 1.4,
-            "Discovery mode (per run):\n"
-            "  capability → top-level outcomes\n"
-            "  theme      → broad topic clusters\n"
-            "  epic       → narrow topic clusters\n"
-            "  persona    → named-actor extraction\n"
-            "  test       → named-test extraction",
-            fill=SIDE_FILL, line=SIDE_LINE, font_size=9.5,
-            bold=False, align=PP_ALIGN.LEFT)
-    # arrow from name-clusters node to side note
-    add_arrow(slide, fx + nw + 0.01, y4 + nh / 2,
-              fx + nw + 0.29, y4 + nh / 2,
-              color=SIDE_LINE, weight=1.25,
-              connector_type=MSO_CONNECTOR.STRAIGHT)
 
     # Right side: what comes out — 5 catalogs (capability spans top row)
     rx = 7.10
     rw = 5.75
     add_section_header(slide, rx, 1.45, rw,
-                       "Phase 1 outputs — 5 catalogs (run 5 times)")
+                       "Phase 1 outputs — 5 catalogs (3 cascade + 2 entity)")
 
     tile_w = (rw - 0.20) / 2
     tile_h = 1.05
@@ -803,30 +846,31 @@ def slide_five(prs):
     catalog_tile(rx, tr_y0, rw,
                  "business_capability_v1",
                  "~6–12 broad business outcomes (top of hierarchy)",
-                 "key · label · desc · n_themes · confidence")
+                 "key · label · desc · n_themes · admit_confidence")
     # theme + epic
     catalog_tile(th_x1, tr_y1, tile_w,
                  "theme_v1",
                  "~12–20, under capabilities",
-                 "key · label · capability_ref · n_chunks · n_sops · confidence")
+                 "key · label · capability_ref · n_chunks · n_sops · admit_confidence")
     catalog_tile(th_x2, tr_y1, tile_w,
                  "epic_v1",
                  "~80–150, under themes",
-                 "key · label · theme_ref · n_sops · confidence")
+                 "key · label · theme_ref · n_sops · admit_confidence")
     # persona + test
     catalog_tile(th_x1, tr_y2, tile_w,
                  "persona_v1",
                  "Named actors in SOPs",
-                 "key · label · actor_type · n_mentions · confidence")
+                 "key · label · actor_type · n_mentions · admit_confidence")
     catalog_tile(th_x2, tr_y2, tile_w,
                  "test_v1",
                  "Named tests / assays",
-                 "key · label · n_sops · confidence")
+                 "key · label · n_sops · admit_confidence")
 
-    # Bottom note on unclassified bucket
+    # Bottom note on unclassified bucket (taxonomy runs only — extraction has no clusters)
     add_box(slide, rx, tr_y2 + tile_h + 0.20, rw, 0.78,
-            "Unclassified bucket on every catalog holds chunks that did not "
-            "cluster cleanly. Surfaced for review, not lost.",
+            "Unclassified bucket on each taxonomy catalog (capability / theme / "
+            "epic) holds chunks that did not cluster cleanly. Surfaced for "
+            "review, not lost.",
             fill=PARK_FILL, line=PARK_LINE, font_size=10.5,
             align=PP_ALIGN.LEFT)
 
@@ -848,9 +892,9 @@ def slide_six(prs):
 version: 1
 discipline: microbiology
 business_capabilities:
-  - {key: specimen_lifecycle, label: "Specimen Lifecycle Management", desc: "Intake, routing, QC, disposal", n_themes: 4, confidence: 0.91}
-  - {key: diagnostic_execution, label: "Diagnostic Test Execution", n_themes: 5, confidence: 0.88}
-  - {key: result_delivery, label: "Result Reporting & Delivery", n_themes: 3, confidence: 0.93}
+  - {key: specimen_lifecycle, label: "Specimen Lifecycle Management", desc: "Intake, routing, QC (Quality Control), disposal", n_themes: 4, admit_confidence: 0.91}
+  - {key: diagnostic_execution, label: "Diagnostic Test Execution", n_themes: 5, admit_confidence: 0.88}
+  - {key: result_delivery, label: "Result Reporting & Delivery", n_themes: 3, admit_confidence: 0.93}
   # ... 6-12 capabilities total"""
 
     yaml_themes = """catalog: theme_v1
@@ -860,12 +904,12 @@ themes:
   - key: specimen_handling
     label: "Specimen handling"
     capability_ref: specimen_lifecycle
-    desc: Intake, routing, QC
+    desc: Intake, routing, QC (Quality Control)
     n_chunks: 142
     n_sops: 22
-    confidence: 0.92
-  - {key: culture_setup, label: "Culture setup", capability_ref: diagnostic_execution, n_sops: 18, confidence: 0.88}
-  - {key: result_review, label: "Result review", capability_ref: result_delivery, n_sops: 24, confidence: 0.90}
+    admit_confidence: 0.92
+  - {key: culture_setup, label: "Culture setup", capability_ref: diagnostic_execution, n_sops: 18, admit_confidence: 0.88}
+  - {key: result_review, label: "Result review", capability_ref: result_delivery, n_sops: 24, admit_confidence: 0.90}
   - {key: unclassified, label: "Unclassified", n_chunks: 14}"""
 
     yaml_epics = """catalog: epic_v1
@@ -877,12 +921,12 @@ epics:
     theme_ref: specimen_handling
     desc: Accessioning, barcoding
     n_sops: 14
-    confidence: 0.88
-  - {key: gram_stain_prep, label: "Gram stain prep", theme_ref: culture_setup, n_sops: 14, confidence: 0.91}
-  - {key: result_sign_off, label: "Result sign-off", theme_ref: result_review, n_sops: 24, confidence: 0.85}
+    admit_confidence: 0.88
+  - {key: gram_stain_prep, label: "Gram stain prep", theme_ref: culture_setup, n_sops: 14, admit_confidence: 0.91}
+  - {key: result_sign_off, label: "Result sign-off", theme_ref: result_review, n_sops: 24, admit_confidence: 0.85}
   # ~80-150 epics total"""
 
-    yaml_personas = """catalog: persona_v1
+    yaml_personas = """catalog: persona_v1     # named actors discovered in SOPs
 version: 1
 discipline: microbiology
 personas:
@@ -891,10 +935,10 @@ personas:
     actor_type: human
     desc: Reads cultures, signs off
     n_mentions: 167
-    confidence: 0.95
-  - {key: lab_assistant, label: "Lab assistant", actor_type: human, n_mentions: 91, confidence: 0.93}
-  - {key: lims, label: "LIMS", actor_type: system, n_mentions: 134, confidence: 0.97}
-  - {key: emr, label: "EMR", actor_type: external_system, n_mentions: 28, confidence: 0.86}"""
+    admit_confidence: 0.95
+  - {key: lab_assistant, label: "Lab assistant", actor_type: human, n_mentions: 91, admit_confidence: 0.93}
+  - {key: lims, label: "LIMS (Laboratory Information Management System)", actor_type: system, n_mentions: 134, admit_confidence: 0.97}
+  - {key: emr, label: "EMR (Electronic Medical Record)", actor_type: external_system, n_mentions: 28, admit_confidence: 0.86}"""
 
     yaml_tests = """catalog: test_v1
 version: 1
@@ -904,19 +948,19 @@ tests:
     label: "Blood culture"
     desc: Aerobic + anaerobic, 5d
     n_sops: 11
-    confidence: 0.91
-  - {key: urine_culture, label: "Urine culture", n_sops: 9, confidence: 0.89}
-  - {key: gram_stain, label: "Gram stain", n_sops: 14, confidence: 0.94}
-  - {key: ast, label: "AST", n_sops: 7, confidence: 0.82}"""
+    admit_confidence: 0.91
+  - {key: urine_culture, label: "Urine culture", n_sops: 9, admit_confidence: 0.89}
+  - {key: gram_stain, label: "Gram stain", n_sops: 14, admit_confidence: 0.94}
+  - {key: ast, label: "AST (Antimicrobial Susceptibility Testing)", n_sops: 7, admit_confidence: 0.82}"""
 
     # Layout: capability spans top, then 2x2 below for theme/epic/persona/test
     full_w = 12.33
     half_w = (full_w - 0.20) / 2  # 6.065
-    cap_h = 1.25
-    other_h = 2.00
+    cap_h = 1.10
+    other_h = 1.95
     gy = 0.15
 
-    by_cap = 1.55
+    by_cap = 1.80   # title rendered at 1.50, just below subtitle ending at 1.47
     by_row1 = by_cap + cap_h + gy
     by_row2 = by_row1 + other_h + gy
 
@@ -1004,6 +1048,11 @@ def slide_seven(prs):
     add_node(slide, tag_x, tag_y, tag_w, tag_h,
              "Tagger  (persona · test · capability)",
              kind="agent", font_size=10.5)
+    # Small inheritance caption under Tagger
+    add_text(slide, tag_x, tag_y + tag_h + 0.01, tag_w, 0.18,
+             "+ theme_ref / epic_ref inherited from Phase 1 cascade buckets (no LLM call)",
+             font_size=8, italic=True, color=TEXT_GREY,
+             align=PP_ALIGN.CENTER)
 
     # Story Extractor
     se_h = 0.50
@@ -1036,11 +1085,9 @@ def slide_seven(prs):
              font_size=9.5, italic=True, color=PARK_LINE,
              align=PP_ALIGN.LEFT)
 
-    # RIGHT: example trace
+    # RIGHT: example trace (code-box titles label each step; no separate header)
     rx = 7.05
     rw = 5.80
-    add_section_header(slide, rx, 1.45, rw,
-                       "Example trace — one chunk through Phase 2")
 
     chunk_yaml = """# Input chunk (already produced by Phase 1 chunking)
 chunk_id: SOP_023.sec_4_2.chunk_07
@@ -1050,21 +1097,26 @@ text: |
   prepares a Gram stain on the specimen.
   The microbiologist reviews the smear."""
 
-    tagger_yaml = """# Tagger output
+    tagger_yaml = """# Tagger output  (3 LLM lookups + 2 inherited)
 tags:
-  persona_refs: [lab_assistant, microbiologist]
-  test_ref: gram_stain
-  capability_ref: diagnostic_execution
+  # Looked up via LLM:
+  persona_refs:    [lab_assistant, microbiologist]
+  test_ref:        gram_stain
+  capability_ref:  diagnostic_execution
+  # Inherited from chunk's Phase 1 cascade buckets:
+  theme_ref:       culture_setup       # from capability cascade
+  epic_ref:        gram_stain_prep     # from theme cascade
   confidence: 0.94"""
 
-    story_yaml = """# Story Extractor output
+    story_yaml = """# Story Extractor output (one of possibly several stories per chunk)
 story_id: ST_023_07_a
 shape: workflow_stage_split
 title: Lab assistant preps Gram stain before reading
 sop_refs: [SOP_023]
 capability_ref: diagnostic_execution
 theme_ref: culture_setup     epic_ref: gram_stain_prep
-persona_refs: [lab_assistant]    test_ref: gram_stain
+persona_refs: [lab_assistant]            # narrowed from tagger's 2 personas
+test_ref: gram_stain                     # this story is about the prep action
 predecessor_capability: specimen_lifecycle
 successor_capability:  diagnostic_execution
 acceptance_criteria: ["Smear stained per protocol"]
@@ -1072,10 +1124,10 @@ extraction_confidence: 0.91
 self_check: pass
 hitl_status: auto"""
 
-    ch1, ch2, ch3 = 1.15, 0.95, 2.30
-    y_a = 1.85
-    y_b = y_a + ch1 + 0.40
-    y_c = y_b + ch2 + 0.40
+    ch1, ch2, ch3 = 1.05, 1.45, 2.10
+    y_a = 1.80
+    y_b = y_a + ch1 + 0.18
+    y_c = y_b + ch2 + 0.18
     add_code_box(slide, rx, y_a, rw, ch1, chunk_yaml,
                  font_size=8, title="Chunk in")
     add_code_box(slide, rx, y_b, rw, ch2, tagger_yaml,
@@ -1101,18 +1153,21 @@ def slide_eight(prs):
 title           | sop_refs[]                | capability_ref  | theme_ref | epic_ref
 persona_refs[]  | test_ref                  | acceptance_criteria[]      | self_check
 extraction_confidence (0.0-1.0)  |  hitl_status ∈ {auto, confirmed, corrected, rejected}
-shape-specific  | (capability)             sop_refs ≥ 2 distinct SOPs  →  cross-cutting
+shape-specific  | (capability)             sop_refs ≥ 2 distinct SOPs  (recurring pattern)
                 | (workflow_stage_split)   predecessor_capability, successor_capability
                 | (configuration_instance) config_keys[]
-                | (cleanup)                deprecates[], replaced_by"""
-    add_code_box(slide, 0.5, 1.55, 12.33, 1.45, schema_yaml,
-                 font_size=9, title="Story schema (all shapes share the top block)")
+                | (cleanup)                deprecates[], replaced_by
+
+note: shape=capability is a STORY TYPE (lifted recurring pattern, sop_breadth ≥ 2).
+      It references — but is distinct from — the business_capability_v1 catalog."""
+    add_code_box(slide, 0.5, 1.80, 12.33, 1.50, schema_yaml,
+                 font_size=8.5, title="Story schema (all shapes share the top block)")
 
     # 2x2 grid of example stories
     sx1, sx2 = 0.5, 6.70
-    sy1 = 3.25
-    sy2 = sy1 + 1.95
-    sw, sh = 6.13, 1.85
+    sy1 = 3.55
+    sy2 = sy1 + 1.80
+    sw, sh = 6.13, 1.70
 
     cap_yaml = """story_id: ST_C_017
 shape: capability
@@ -1241,11 +1296,9 @@ def slide_nine(prs):
             fill=SIDE_FILL, line=SIDE_LINE,
             font_size=10.5, align=PP_ALIGN.LEFT)
 
-    # Right: example pass + fail traces
+    # Right: example pass + fail traces (code-box titles label each)
     rx = 6.85
     rw = 6.0
-    add_section_header(slide, rx, 1.50, rw,
-                       "Example audit traces")
 
     pass_yaml = """validator_run:
   story_id: ST_023_07_a
@@ -1313,7 +1366,7 @@ def slide_ten(prs):
         ("Sampled Validator",
          "rubric verdict\nFAIL"),
         ("Catalog Builder",
-         "cluster_confidence\n< 0.80 on admit"),
+         "admit_confidence\n< 0.80 (any of\n5 catalogs)"),
     ]
     trig_centers_x = []
     for i, (head, body) in enumerate(triggers):
@@ -1381,26 +1434,24 @@ def slide_ten(prs):
                   x + trig_w / 2, out_y + 0.26)
 
     # bottom note
-    note_y = out_y + 0.26 + out_h - 0.04 + 0.20
-    add_text(slide, fx, note_y, full_w, 0.42,
-             "hitl_status: auto (untouched) · confirmed · corrected · rejected. "
-             "Pipeline never waits.  Thresholds configurable per discipline.",
-             font_size=9.5, italic=True, color=TEXT_GREY,
+    note_y = out_y + 0.26 + out_h - 0.04 + 0.10
+    add_text(slide, fx, note_y, full_w, 0.50,
+             "hitl_status: auto · confirmed · corrected · rejected.  Tagger has no "
+             "direct trigger — confidence rolls into Story Extractor.  Milestone 1: "
+             "decisions applied to corpus manually (auto emit-back on roadmap).",
+             font_size=8.5, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.LEFT)
 
     # ---- RIGHT: confidence schema + queue example --------------------------
     rx = 6.85
     rw = 5.98
 
-    add_section_header(slide, rx, 1.45, rw,
-                       "Confidence — where it surfaces")
-
     confidence_yaml = """# At every agent boundary, a confidence is emitted.
 
-catalog item     →  confidence: 0.92      # admit-rubric score
-tagger output    →  confidence: 0.94      # per-field + overall
+catalog item     →  admit_confidence: 0.92    # rubric score (cluster or entity)
+tagger output    →  confidence: 0.94          # rolls into story extraction_confidence
 story extractor  →  extraction_confidence: 0.89
-sampled validator →  verdict_confidence:  0.96
+sampled validator →  verdict: PASS / FAIL  +  reason
 
 # Review-priority thresholds (configurable per discipline)
 catalog_admit_min:    0.80    # below → priority review
@@ -1408,9 +1459,8 @@ story_extract_min:    0.85    # below → priority review
 validator_drift:      any FAIL → priority review
 queue_priority:       weighted(confidence, impact)"""
 
-    add_code_box(slide, rx, 1.85, rw, 2.20, confidence_yaml, font_size=8)
-
-    add_section_header(slide, rx, 4.20, rw, "Review queue item — example")
+    add_code_box(slide, rx, 1.85, rw, 2.20, confidence_yaml, font_size=8,
+                 title="Confidence — where it surfaces")
 
     queue_yaml = """queue_id: RQ_2026_05_08_0042
 source: story_extractor
@@ -1427,7 +1477,8 @@ reviewer_actions: [confirm, correct, reject]
 # applying the decision to the corpus is a
 # manual step in milestone 1."""
 
-    add_code_box(slide, rx, 4.60, rw, 2.55, queue_yaml, font_size=8)
+    add_code_box(slide, rx, 4.60, rw, 2.55, queue_yaml, font_size=8,
+                 title="Review queue item — example")
 
 
 # ============================================================================
