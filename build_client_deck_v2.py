@@ -9,7 +9,7 @@ Produces: client_alignment_deck_v2.pptx alongside this script.
 Architecture summary:
   - Cold-start: every catalog (incl. business_capability) discovered from this
     discipline's SOP corpus. No universal lab_stage artifact.
-  - 4 agent classes: Catalog Builder, Tagger, Story Extractor, Sampled Validator.
+  - 3 agent classes: Catalog Builder, Story Extractor, Sampled Validator.
   - Catalog Builder runs 5 times: business_capability, theme, epic, persona, test.
   - Top-down hierarchical discovery: capability ← theme ← epic.
   - HITL is a non-blocking review queue: every emission goes to corpus AND is
@@ -22,10 +22,10 @@ Architecture summary:
   1.  What we are building
   2.  Inputs — SOPs only
   3.  End-to-end flow (3 phases)
-  4.  The 4 agents
+  4.  The 3 agents
   5.  Phase 1 — Catalog Build (cold, hierarchical, 5 catalogs)
   6.  Catalog schemas + examples (capability / theme / epic / persona / test)
-  7.  Phase 2 — Per-SOP Extraction (Tagger + Story Extractor)
+  7.  Phase 2 — Per-SOP Extraction (Story Extractor, tags pre-attached)
   8.  Story schema + 4 shapes (with examples)
   9.  Sampled Validator QC
   10. HITL — non-blocking review queue
@@ -323,7 +323,7 @@ def slide_one(prs):
     add_box(slide, x1, y, box_w, box_h,
             "SOPs\n(Standard Operating Procedures)\n— the corpus —",
             font_size=14, bold=True)
-    add_box(slide, x2, y, box_w, box_h, "Our system\n4 agent classes",
+    add_box(slide, x2, y, box_w, box_h, "Our system\n3 agent classes",
             fill=SYS_FILL, line=SYS_LINE, font_size=18, bold=True)
     add_box(slide, x3, y, box_w, box_h,
             "Story corpus\n+ 5 catalogs (capability/theme/\n  epic/persona/test)\n+ audit log + review queue",
@@ -353,7 +353,7 @@ def slide_one(prs):
          ]),
         (8.8, "Non-blocking review",
          [
-             "4 agent classes: Catalog Builder, Tagger, Story Extractor, Sampled Validator.",
+             "3 agent classes: Catalog Builder, Story Extractor, Sampled Validator.",
              "Confidence at every boundary; every emission flows to corpus and is logged for human review post-hoc — pipeline never waits.",
          ]),
     ]
@@ -519,20 +519,17 @@ def slide_three(prs):
 
     inner_x2 = px2 + 0.25
     inner_w2 = pw - 0.5
-    jy = py + 0.85
+    jy = py + 0.95
     add_node(slide, inner_x2, jy, inner_w2, 0.40,
              "For each SOP (in parallel):", kind="process",
              font_size=10.5, bold=True)
     jy += 0.55
-    add_node(slide, inner_x2, jy, inner_w2, 0.40,
-             "For each chunk (from Phase 1):",
+    add_node(slide, inner_x2, jy, inner_w2, 0.55,
+             "For each chunk (from Phase 1,\nwith tags already attached)",
              kind="process", font_size=10)
-    jy += 0.50
-    add_node(slide, inner_x2, jy, inner_w2, 0.55,
-             "Tagger\n(persona + test + capability)", kind="agent", font_size=10)
     jy += 0.72
-    add_node(slide, inner_x2, jy, inner_w2, 0.55,
-             "Story Extractor\n(self-checks against rubric)",
+    add_node(slide, inner_x2, jy, inner_w2, 0.65,
+             "Story Extractor\n(generates 4-shape story +\nself_check rubric)",
              kind="agent", font_size=10)
 
     add_text(slide, px2 + 0.15, py + ph - 0.62, pw - 0.3, 0.28,
@@ -606,89 +603,91 @@ def slide_three(prs):
 
 
 # ============================================================================
-# SLIDE 4 — The 4 agents
+# SLIDE 4 — The 3 agents
 # ============================================================================
 
 def slide_four(prs):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    add_title(slide, "The 4 agents")
+    add_title(slide, "The 3 agents")
     add_subtitle(
         slide,
-        "4 LLM agents, each owning one step. Chunking, embedding, and clustering "
-        "are deterministic; the LLM handles naming, tagging, extraction, and validation.",
+        "3 LLM agents, each owning one step. Chunking, embedding, clustering, "
+        "and per-chunk tag assembly are deterministic; the LLM handles naming, "
+        "extraction, and validation.",
     )
 
-    # 2x2 grid of agent cards
-    cw, ch = 6.0, 2.65
+    # Layout: Catalog Builder full-width top, Story Extractor + Sampled Validator below
+    full_w = 12.33
+    cw = 6.0
+    ch_top = 2.45
+    ch_bot = 2.65
     gap_x = 0.33
-    gap_y = 0.30
+    gap_y = 0.28
     cx1 = 0.5
     cx2 = cx1 + cw + gap_x
-    cy1 = 1.55
-    cy2 = cy1 + ch + gap_y
+    cy_top = 1.55
+    cy_bot = cy_top + ch_top + gap_y
 
-    def agent_card(x, y, name, role, runs_in, what_it_does, why_simpler):
-        add_box(slide, x, y, cw, ch, "",
+    def agent_card(x, y, w, h, name, role, runs_in, what_it_does, why_simpler):
+        add_box(slide, x, y, w, h, "",
                 fill=CARD_FILL, line=CARD_LINE)
         # name pill
         add_box(slide, x + 0.18, y + 0.18, 2.55, 0.42, name,
                 fill=SYS_FILL, line=SYS_LINE,
                 font_size=12.5, bold=True, align=PP_ALIGN.CENTER)
         # role
-        add_text(slide, x + 2.85, y + 0.22, cw - 3.05, 0.36, role,
+        add_text(slide, x + 2.85, y + 0.22, w - 3.05, 0.36, role,
                  font_size=11.5, bold=True, color=ACCENT)
-        add_text(slide, x + 2.85, y + 0.55, cw - 3.05, 0.30,
+        add_text(slide, x + 2.85, y + 0.55, w - 3.05, 0.30,
                  f"Runs in: {runs_in}",
                  font_size=10, italic=True, color=TEXT_GREY)
         # body
-        add_text(slide, x + 0.20, y + 1.00, cw - 0.40, 0.30,
+        add_text(slide, x + 0.20, y + 1.00, w - 0.40, 0.30,
                  "What it does:", font_size=11, bold=True, color=TEXT_DARK)
-        add_text(slide, x + 0.20, y + 1.27, cw - 0.40, 0.85, what_it_does,
+        add_text(slide, x + 0.20, y + 1.27, w - 0.40, h - 1.65, what_it_does,
                  font_size=10.5, color=TEXT_DARK)
-        add_text(slide, x + 0.20, y + 2.10, cw - 0.40, 0.30,
+        add_text(slide, x + 0.20, y + h - 0.55, w - 0.40, 0.30,
                  "Why this is simpler:", font_size=11, bold=True, color=END_LINE)
-        add_text(slide, x + 0.20, y + 2.32, cw - 0.40, 0.30, why_simpler,
+        add_text(slide, x + 0.20, y + h - 0.28, w - 0.40, 0.28, why_simpler,
                  font_size=10, italic=True, color=TEXT_GREY)
 
+    # Catalog Builder — top row, full width
     agent_card(
-        cx1, cy1,
+        cx1, cy_top, full_w, ch_top,
         "Catalog Builder",
-        "Cold-discovers the 5 catalogs from the SOP corpus",
+        "Cold-discovers the 5 catalogs + per-chunk tag manifest from the SOP corpus",
         "Phase 1 (5 runs, two modes)",
-        "Taxonomy mode (capability → theme → epic, top-down cascade): names "
-        "each cluster and admits via rubric; child levels cluster only within "
-        "their parent's chunks.\nEntity mode (persona, test): extracts named "
-        "mentions per chunk, dedupes across the corpus, admits each unique entity.",
-        "One agent class with two modes, instead of five separate agent classes.",
+        "Taxonomy mode (capability → theme → epic, top-down cascade): clusters chunks, "
+        "names each cluster, admits via rubric; child levels cluster only within their "
+        "parent's chunks.  Entity mode (persona, test): extracts named mentions per chunk, "
+        "dedupes across the corpus, admits each unique entity.  As a side effect, every "
+        "chunk emerges with all 5 tags attached (no separate tagging step).",
+        "One agent class with two modes, instead of five separate agent classes — "
+        "and tagging falls out for free.",
     )
+
+    # Story Extractor — bottom left
     agent_card(
-        cx2, cy1,
-        "Tagger",
-        "Tags each chunk with persona / test / capability",
-        "Phase 2 (per chunk, parallel across SOPs)",
-        "Single structured-output call: looks up persona refs, test ref, and "
-        "capability ref against persona_v1, test_v1, and business_capability_v1. "
-        "theme_ref and epic_ref are inherited directly from the chunk's Phase 1 "
-        "cascade buckets — no LLM lookup needed.",
-        "Three LLM lookups bundled into one call; theme/epic come for free from cascade.",
-    )
-    agent_card(
-        cx1, cy2,
+        cx1, cy_bot, cw, ch_bot,
         "Story Extractor",
         "Produces 4-shape stories with inline self-check",
-        "Phase 2 (per tagged chunk)",
-        "Generates story (capability / stage-split / config-instance / cleanup) "
-        "matching the chunk + tags. Emits extraction_confidence + self_check verdict. "
-        "Story always emits to corpus; FAIL or low-conf is flagged for priority review.",
+        "Phase 2 (per chunk, parallel across SOPs)",
+        "Reads the chunk's pre-attached tags from Phase 1 (capability / theme / epic / "
+        "persona / test).  Generates a story (capability / workflow_stage_split / "
+        "configuration_instance / cleanup) matching the chunk + tags.  Emits "
+        "extraction_confidence + self_check verdict.  Story always emits to corpus; "
+        "FAIL or low-conf flagged for priority review.",
         "Non-blocking: self-check on the hot path, no revise loop, no waiting for a human.",
     )
+
+    # Sampled Validator — bottom right
     agent_card(
-        cx2, cy2,
+        cx2, cy_bot, cw, ch_bot,
         "Sampled Validator",
         "Async drift detection on a sample of stories",
         "Cross-cutting (~10% of emitted stories)",
         "Re-runs the full Validator rubric on a sampled fraction of stories already "
-        "in the corpus. On FAIL, the story is logged to the review queue (with "
+        "in the corpus.  On FAIL, the story is logged to the review queue (with "
         "rubric diff) for priority review — story stays in corpus.",
         "Drift detection on a sample, not a gate — never blocks emission.",
     )
@@ -777,10 +776,11 @@ def slide_five(prs):
                 "Merge near-duplicates;\nadmit each unique entity.",
                 kind="process")
 
-    # ---- Output: Catalog YAML (full width) ----
+    # ---- Output: Catalog YAML + per-chunk tag manifest (full width) ----
     y_cat = y_stage3 + stage_h + 0.20
-    add_node(slide, fx, y_cat, full_w, nh, "Catalog YAML  (5 catalogs)",
-             kind="end", font_size=11, bold=True)
+    add_node(slide, fx, y_cat, full_w, nh,
+             "Catalog YAML  +  per-chunk tag manifest",
+             kind="end", font_size=10.5, bold=True)
 
     # ---- Arrows ----
     cx_full = fx + full_w / 2
@@ -822,7 +822,7 @@ def slide_five(prs):
     rx = 7.10
     rw = 5.75
     add_section_header(slide, rx, 1.45, rw,
-                       "Phase 1 outputs — 5 catalogs (3 cascade + 2 entity)")
+                       "Phase 1 outputs — 5 catalogs + per-chunk tag manifest")
 
     tile_w = (rw - 0.20) / 2
     tile_h = 1.05
@@ -985,7 +985,7 @@ def slide_seven(prs):
     add_title(slide, "Phase 2 — Per-SOP Extraction")
     add_subtitle(
         slide,
-        "For each SOP in parallel, walk its chunks (from Phase 1) and run Tagger then Story Extractor on each.",
+        "For each SOP in parallel, walk its chunks (Phase 1 already attached the 5 tags) and run Story Extractor on each.",
     )
 
     # LEFT: flow inside a ForEach SOP container
@@ -1040,30 +1040,21 @@ def slide_seven(prs):
              "ForEach chunk", font_size=11, bold=True, italic=True,
              color=SYS_LINE, align=PP_ALIGN.LEFT)
 
-    # Tagger
-    tag_h = 0.40
-    tag_y = inner_y + 0.40
-    tag_w = inner_w - 0.60
-    tag_x = inner_x + 0.30
-    add_node(slide, tag_x, tag_y, tag_w, tag_h,
-             "Tagger  (persona · test · capability)",
-             kind="agent", font_size=10.5)
-    # Small inheritance caption under Tagger
-    add_text(slide, tag_x, tag_y + tag_h + 0.01, tag_w, 0.18,
-             "+ theme_ref / epic_ref inherited from Phase 1 cascade buckets (no LLM call)",
-             font_size=8, italic=True, color=TEXT_GREY,
+    # Chunk-with-tags input note
+    note_w = inner_w - 0.60
+    note_x = inner_x + 0.30
+    note_y_top = inner_y + 0.42
+    add_text(slide, note_x, note_y_top, note_w, 0.22,
+             "Chunk arrives with all 5 tags attached (from Phase 1)",
+             font_size=9.5, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.CENTER)
 
-    # Story Extractor
-    se_h = 0.50
-    se_y = tag_y + tag_h + 0.20
-    add_node(slide, tag_x, se_y, tag_w, se_h,
+    # Story Extractor (single agent inside ForEach chunk)
+    se_h = 0.70
+    se_y = note_y_top + 0.30
+    add_node(slide, note_x, se_y, note_w, se_h,
              "Story Extractor\n(generates 4-shape story · self_check rubric)",
              kind="agent", font_size=10)
-
-    # arrows inside inner
-    inner_cx = inner_x + inner_w / 2
-    add_arrow(slide, inner_cx, tag_y + tag_h, inner_cx, se_y)
 
     # arrows outside inner (above)
     add_arrow(slide, fx + nw / 2, sy + nh,  fx + nw / 2, sy2)
@@ -1089,24 +1080,19 @@ def slide_seven(prs):
     rx = 7.05
     rw = 5.80
 
-    chunk_yaml = """# Input chunk (already produced by Phase 1 chunking)
+    chunk_with_tags_yaml = """# Phase 1 chunk record  (chunk + 5 tags, ready for Phase 2)
 chunk_id: SOP_023.sec_4_2.chunk_07
 sop_ref: SOP_023
 text: |
   After accessioning, the lab assistant
   prepares a Gram stain on the specimen.
-  The microbiologist reviews the smear."""
-
-    tagger_yaml = """# Tagger output  (3 LLM lookups + 2 inherited)
+  The microbiologist reviews the smear.
 tags:
-  # Looked up via LLM:
-  persona_refs:    [lab_assistant, microbiologist]
-  test_ref:        gram_stain
-  capability_ref:  diagnostic_execution
-  # Inherited from chunk's Phase 1 cascade buckets:
-  theme_ref:       culture_setup       # from capability cascade
-  epic_ref:        gram_stain_prep     # from theme cascade
-  confidence: 0.94"""
+  capability_ref: diagnostic_execution   # from cascade cluster
+  theme_ref:      culture_setup          # from cascade cluster
+  epic_ref:       gram_stain_prep        # from cascade cluster
+  persona_refs:   [lab_assistant, microbiologist]   # extracted
+  test_ref:       gram_stain                        # extracted"""
 
     story_yaml = """# Story Extractor output (one of possibly several stories per chunk)
 story_id: ST_023_07_a
@@ -1115,8 +1101,8 @@ title: Lab assistant preps Gram stain before reading
 sop_refs: [SOP_023]
 capability_ref: diagnostic_execution
 theme_ref: culture_setup     epic_ref: gram_stain_prep
-persona_refs: [lab_assistant]            # narrowed from tagger's 2 personas
-test_ref: gram_stain                     # this story is about the prep action
+persona_refs: [lab_assistant]            # narrowed from chunk's 2 personas
+test_ref: gram_stain                     # this story focuses on the prep action
 predecessor_capability: specimen_lifecycle
 successor_capability:  diagnostic_execution
 acceptance_criteria: ["Smear stained per protocol"]
@@ -1124,16 +1110,13 @@ extraction_confidence: 0.91
 self_check: pass
 hitl_status: auto"""
 
-    ch1, ch2, ch3 = 1.05, 1.45, 2.10
+    ch1, ch2 = 2.30, 2.45
     y_a = 1.80
-    y_b = y_a + ch1 + 0.18
-    y_c = y_b + ch2 + 0.18
-    add_code_box(slide, rx, y_a, rw, ch1, chunk_yaml,
-                 font_size=8, title="Chunk in")
-    add_code_box(slide, rx, y_b, rw, ch2, tagger_yaml,
-                 font_size=8, title="Tagger")
-    add_code_box(slide, rx, y_c, rw, ch3, story_yaml,
-                 font_size=8, title="Story Extractor")
+    y_b = y_a + ch1 + 0.30
+    add_code_box(slide, rx, y_a, rw, ch1, chunk_with_tags_yaml,
+                 font_size=8, title="Phase 1 chunk record (input to Story Extractor)")
+    add_code_box(slide, rx, y_b, rw, ch2, story_yaml,
+                 font_size=8, title="Story Extractor output")
 
 
 # ============================================================================
@@ -1436,9 +1419,9 @@ def slide_ten(prs):
     # bottom note
     note_y = out_y + 0.26 + out_h - 0.04 + 0.10
     add_text(slide, fx, note_y, full_w, 0.50,
-             "hitl_status: auto · confirmed · corrected · rejected.  Tagger has no "
-             "direct trigger — confidence rolls into Story Extractor.  Milestone 1: "
-             "decisions applied to corpus manually (auto emit-back on roadmap).",
+             "hitl_status: auto · confirmed · corrected · rejected.  Milestone 1: "
+             "reviewer decisions applied to corpus manually (auto emit-back on roadmap).  "
+             "Thresholds configurable per discipline.",
              font_size=8.5, italic=True, color=TEXT_GREY,
              align=PP_ALIGN.LEFT)
 
@@ -1449,7 +1432,6 @@ def slide_ten(prs):
     confidence_yaml = """# At every agent boundary, a confidence is emitted.
 
 catalog item     →  admit_confidence: 0.92    # rubric score (cluster or entity)
-tagger output    →  confidence: 0.94          # rolls into story extraction_confidence
 story extractor  →  extraction_confidence: 0.89
 sampled validator →  verdict: PASS / FAIL  +  reason
 
